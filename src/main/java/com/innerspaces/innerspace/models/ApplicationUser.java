@@ -1,6 +1,8 @@
 package com.innerspaces.innerspace.models;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -9,10 +11,12 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 public class ApplicationUser {
+
+    // class attributes
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "user_id")
-    private Integer user_id;
+    private Long user_id;
 
     @Column(name = "first_name")
     private String firstName;
@@ -32,8 +36,14 @@ public class ApplicationUser {
     @JsonIgnore
     private String password;
 
-    private Date createdAt;
-    private Date lastLogin;
+    private LocalDate dateJoined;
+    private LocalDate lastLogin;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private UserProfile userProfile;
+
+    @OneToMany(mappedBy = "sender")
+    private Set<FollowRequest> sentFollowRequests = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -42,19 +52,26 @@ public class ApplicationUser {
             inverseJoinColumns = {@JoinColumn(name = "role_id")}
     )
     private Set<Role> authorities;
+
+
+
+    // Constructors
     public ApplicationUser()
     {
         this.authorities = new HashSet<>();
     }
 
 
-    // Getters and setters for all fields
 
-    public Integer getUser_id() {
+
+
+
+    // Getters and setters for all fields
+    public Long getUser_id() {
         return user_id;
     }
 
-    public void setUser_id(Integer user_id) {
+    public void setUser_id(Long user_id) {
         this.user_id = user_id;
     }
 
@@ -106,20 +123,20 @@ public class ApplicationUser {
         this.password = password;
     }
 
-    public Date getCreatedAt() {
-        return createdAt;
+    public LocalDate getDateJoined() {
+        return dateJoined;
     }
 
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+    public void setDateJoined(LocalDate DateJoined) {
+        this.dateJoined = LocalDate.now();
     }
 
-    public Date getLastLogin() {
+    public LocalDate getLastLogin() {
         return lastLogin;
     }
 
-    public void setLastLogin(Date lastLogin) {
-        this.lastLogin = lastLogin;
+    public void setLastLogin(LocalDate lastLogin) {
+        this.lastLogin = LocalDate.now();
     }
 
     public Set<Role> getAuthorities() {
@@ -128,5 +145,21 @@ public class ApplicationUser {
 
     public void setAuthorities(Set<Role> authorities) {
         this.authorities = authorities;
+    }
+
+    public UserProfile getUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
+    }
+
+    public Set<FollowRequest> getSentFollowRequests() {
+        return sentFollowRequests;
+    }
+
+    public void setSentFollowRequests(Set<FollowRequest> sentFollowRequests) {
+        this.sentFollowRequests = sentFollowRequests;
     }
 }

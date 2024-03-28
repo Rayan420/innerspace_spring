@@ -14,6 +14,14 @@ public class Role {
         super();
     }
 
+    public Role(Integer roleId, String authority)
+    {
+        super();
+        this.roleId = roleId;
+        this.authority = authority;
+
+    }
+
     public Integer getRoleId() {
         return roleId;
     }
