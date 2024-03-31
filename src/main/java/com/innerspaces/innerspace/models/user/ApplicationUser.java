@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models;
+package com.innerspaces.innerspace.models.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -12,26 +12,25 @@ import java.util.Set;
 @Table(name = "users")
 public class ApplicationUser {
 
-    // class attributes
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "user_id")
-    private Long user_id;
+    private Long userId;
+
+    @Column(unique = true)
+    private String username;
+
+    @Column(unique = true)
+    private String email;
 
     @Column(name = "first_name")
     private String firstName;
 
     @Column(name = "last_name")
-    private String last_name;
-
-    @Column(unique = true)
-    private String email;
+    private String lastName;
 
     @Column(name = "dob")
     private Date dateOfBirth;
-
-    @Column(unique = true)
-    private String username;
 
     @JsonIgnore
     private String password;
@@ -39,11 +38,14 @@ public class ApplicationUser {
     private LocalDate dateJoined;
     private LocalDate lastLogin;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserProfile userProfile;
 
     @OneToMany(mappedBy = "sender")
     private Set<FollowRequest> sentFollowRequests = new HashSet<>();
+
+    @OneToMany(mappedBy = "receiver")
+    private Set<FollowRequest> receivedFollowRequests = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -52,6 +54,18 @@ public class ApplicationUser {
             inverseJoinColumns = {@JoinColumn(name = "role_id")}
     )
     private Set<Role> authorities;
+
+    @ManyToMany
+    @JoinTable(name = "user_followers",
+            joinColumns = @JoinColumn(name = "follower_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<ApplicationUser> followers = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "user_following",
+            joinColumns = @JoinColumn(name = "following_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<ApplicationUser> following = new HashSet<>();
 
 
 
@@ -67,12 +81,12 @@ public class ApplicationUser {
 
 
     // Getters and setters for all fields
-    public Long getUser_id() {
-        return user_id;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setUser_id(Long user_id) {
-        this.user_id = user_id;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getFirstName() {
@@ -83,12 +97,13 @@ public class ApplicationUser {
         this.firstName = firstName;
     }
 
-    public String getLast_name() {
-        return last_name;
+    public String getLastName() {
+        return lastName;
     }
 
-    public void setLast_name(String last_name) {
-        this.last_name = last_name;
+
+    public void setLastName(String last_name) {
+        this.lastName = last_name;
     }
 
     public String getEmail() {
@@ -127,7 +142,7 @@ public class ApplicationUser {
         return dateJoined;
     }
 
-    public void setDateJoined(LocalDate DateJoined) {
+    public void setDateJoined() {
         this.dateJoined = LocalDate.now();
     }
 
@@ -162,4 +177,29 @@ public class ApplicationUser {
     public void setSentFollowRequests(Set<FollowRequest> sentFollowRequests) {
         this.sentFollowRequests = sentFollowRequests;
     }
+
+    public Set<FollowRequest> getReceivedFollowRequests() {
+        return receivedFollowRequests;
+    }
+
+    public void setReceivedFollowRequests(Set<FollowRequest> receivedFollowRequests) {
+        this.receivedFollowRequests = receivedFollowRequests;
+    }
+
+    public Set<ApplicationUser> getFollowers() {
+        return followers;
+    }
+
+    public void setFollowers(Set<ApplicationUser> followers) {
+        this.followers = followers;
+    }
+
+    public Set<ApplicationUser> getFollowing() {
+        return following;
+    }
+
+    public void setFollowing(Set<ApplicationUser> following) {
+        this.following = following;
+    }
+
 }

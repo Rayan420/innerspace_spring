@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models;
+package com.innerspaces.innerspace.models.user;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,6 +13,7 @@ public class Role {
     public Role() {
         super();
     }
+
 
     public Role(Integer roleId, String authority)
     {

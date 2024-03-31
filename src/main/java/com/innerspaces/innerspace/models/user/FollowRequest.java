@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models;
+package com.innerspaces.innerspace.models.user;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,7 +25,7 @@ public class FollowRequest {
 
     @ManyToOne
     @JoinColumn(name = "receiver_id")
-    private UserProfile receiver;
+    private ApplicationUser receiver;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

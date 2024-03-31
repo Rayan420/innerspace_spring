@@ -1,6 +1,6 @@
-package com.innerspaces.innerspace.repositories;
+package com.innerspaces.innerspace.repositories.user;
 
-import com.innerspaces.innerspace.models.Role;
+import com.innerspaces.innerspace.models.user.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
