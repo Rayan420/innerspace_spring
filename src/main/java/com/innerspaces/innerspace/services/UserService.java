@@ -1,5 +1,6 @@
 package com.innerspaces.innerspace.services;
 import com.innerspaces.innerspace.controller.AuthenticationController;
+import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.models.user.ApplicationUser;
 import com.innerspaces.innerspace.models.user.RegistrationObject;
 import com.innerspaces.innerspace.models.user.Role;
@@ -11,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -45,13 +49,44 @@ public class UserService {
         user.getUserProfile().setBio("this is a test bio set fromm the code");
         logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
 
+        if(userRepo.findByEmail(ro.getEmail()).isPresent())
+        {
+            throw new UsernameOrEmailAlreadyTaken(ro.getEmail() );
+        }
         user.setEmail(ro.getEmail());
         user.setFirstName(ro.getFirstName());
         user.setLastName(ro.getLastName());
         user.setDateOfBirth(ro.getDob());
         user.setDateJoined();
+        if(userRepo.findByUsername(ro.getUsername()).isPresent())
+        {
+            List<String> names = new ArrayList<>();
+            names = usernameRecommendation(ro.getUsername());
+            throw new UsernameOrEmailAlreadyTaken(names, ro.getUsername() );
+
+        }
+        user.setUsername(ro.getUsername());
 
         return userRepo.save(user);
+    }
+
+
+    public  List<String> usernameRecommendation(String username)
+    {
+        Set<String> usernames = new HashSet<>();
+        usernames.add(userRepo.findByUsernameLike(username).get());
+        List<String> suggestionList = new ArrayList<>();
+        while(suggestionList.size() !=4)
+        {
+            long randomNum = (long) Math.floor(Math.random() * 1_00);
+            String suggestion;
+            suggestion =  username + randomNum;
+            if(!username.contains(suggestion) && !suggestionList.contains(suggestion)){
+                suggestionList.add(suggestion);
+            }
+        }
+
+        return suggestionList;
     }
 
 }
