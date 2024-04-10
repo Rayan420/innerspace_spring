@@ -1,8 +1,10 @@
 package com.innerspaces.innerspace.exceptions;
 
+import java.io.Serial;
 import java.util.List;
 
 public class UsernameOrEmailAlreadyTaken extends RuntimeException{
+    @Serial
     private static  final long serialVersionUID = 1L;
 
     public UsernameOrEmailAlreadyTaken(String message)

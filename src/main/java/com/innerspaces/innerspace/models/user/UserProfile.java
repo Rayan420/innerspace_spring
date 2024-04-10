@@ -52,8 +52,10 @@ public class UserProfile {
         super();
     }
 
-
-
+    public UserProfile(String profilePictureUrl, String bio) {
+        this.profilePictureUrl = profilePictureUrl;
+        this.bio = bio;
+    }
     // Getters and setters
 
     public Long getProfileId() {

@@ -1,5 +1,6 @@
 package com.innerspaces.innerspace.controller;
 
+import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.models.user.ApplicationUser;
 import com.innerspaces.innerspace.models.user.RegistrationObject;
@@ -30,12 +31,18 @@ public class AuthenticationController {
         String message = ex.getMessage();
         return new ResponseEntity<String>(message, HttpStatus.CONFLICT);
     }
-
+    @ExceptionHandler(RoleDoesNotExistException.class)
+    public ResponseEntity<String> handleRoleDoesNotExistException()
+    {
+        return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+    }
 
     @PostMapping("/register")
     public ApplicationUser registerUser(@RequestBody RegistrationObject ro) throws Exception {
         return userService.registerUser(ro);
     }
+
+
 
 
 }

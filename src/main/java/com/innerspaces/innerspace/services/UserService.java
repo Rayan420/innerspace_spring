@@ -1,5 +1,6 @@
 package com.innerspaces.innerspace.services;
 import com.innerspaces.innerspace.controller.AuthenticationController;
+import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.models.user.ApplicationUser;
 import com.innerspaces.innerspace.models.user.RegistrationObject;
@@ -35,18 +36,16 @@ public class UserService {
     public ApplicationUser registerUser(RegistrationObject ro) throws Exception {
         ApplicationUser user = new ApplicationUser();
         HashSet<Role> roles = new HashSet<>();
-        if(roleRepo.findByAuthority("USER").isPresent()) {
-            roles.add(roleRepo.findByAuthority("USER").get());
-        } else {
-            throw new Exception("No 'User' Role found");
-        }
+
+        roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
         user.setAuthorities(roles);
 
         // Set the user for the profile
         logger.info("Received registration request for user: {}", ro);
         UserProfile profile = new UserProfile();
+        profile.setBio(ro.getBio());
+        profile.setProfilePictureUrl(ro.getProfilePictureUrl());
         user.setUserProfile(profile);
-        user.getUserProfile().setBio("this is a test bio set fromm the code");
         logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
 
         if(userRepo.findByEmail(ro.getEmail()).isPresent())
@@ -74,7 +73,7 @@ public class UserService {
     public  List<String> usernameRecommendation(String username)
     {
         Set<String> usernames = new HashSet<>();
-        usernames.add(userRepo.findByUsernameLike(username).get());
+        usernames.add(userRepo.findByUsernameLike(username).orElse("NO RECOMMENDED USERNAME"));
         List<String> suggestionList = new ArrayList<>();
         while(suggestionList.size() !=4)
         {
