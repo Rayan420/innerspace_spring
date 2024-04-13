@@ -1,9 +1,10 @@
 package com.innerspaces.innerspace.models.user;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
 
 @Entity
 @Table(name = "roles")
-public class Role {
+public class Role implements GrantedAuthority {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "role_id")
@@ -31,8 +32,9 @@ public class Role {
         this.roleId = roleId;
     }
 
+    @Override
     public String getAuthority() {
-        return authority;
+        return this.authority;
     }
 
     public void setAuthority(String authority) {

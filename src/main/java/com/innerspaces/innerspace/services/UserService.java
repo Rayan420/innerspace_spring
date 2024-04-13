@@ -56,7 +56,6 @@ public class UserService {
         user.setFirstName(ro.getFirstName());
         user.setLastName(ro.getLastName());
         user.setDateOfBirth(ro.getDob());
-        user.setDateJoined();
         if(userRepo.findByUsername(ro.getUsername()).isPresent())
         {
             List<String> names = new ArrayList<>();
