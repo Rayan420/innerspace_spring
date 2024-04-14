@@ -84,7 +84,7 @@ public class ApplicationUser implements UserDetails {
     public ApplicationUser() {
         super();
         this.isCredentialsNonExpired = true;
-        this.isEnabled = false;
+        this.isEnabled = true;
         this.isAccountNonExpired = true;
         this.isAccountNonLocked = true;
     }

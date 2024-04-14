@@ -12,11 +12,13 @@ public class RegistrationObject {
     private String profilePictureUrl;
     private String bio;
 
+    private String password;
+
     public RegistrationObject() {
         super();
     }
 
-    public RegistrationObject(String email, String username, String firstName, String lastName, Date dob, String profilePictureUrl, String bio) {
+    public RegistrationObject(String email, String username, String firstName, String lastName, Date dob, String profilePictureUrl, String bio, String password) {
         this.email = email;
         this.username = username;
         this.firstName = firstName;
@@ -24,6 +26,7 @@ public class RegistrationObject {
         this.dob = dob;
         this.profilePictureUrl = profilePictureUrl;
         this.bio = bio;
+        this.password=password;
     }
 
     public String getEmail() {
@@ -81,6 +84,14 @@ public class RegistrationObject {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     @Override
