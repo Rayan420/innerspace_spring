@@ -4,8 +4,8 @@ import com.innerspaces.innerspace.controller.AuthenticationController;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.models.user.ApplicationUser;
-import com.innerspaces.innerspace.models.user.LoginResponseDTO;
-import com.innerspaces.innerspace.models.user.RegistrationObject;
+import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
+import com.innerspaces.innerspace.models.auth.RegistrationObject;
 import com.innerspaces.innerspace.models.user.Role;
 import com.innerspaces.innerspace.models.user.UserProfile;
 import com.innerspaces.innerspace.repositories.user.RoleRepository;
@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -41,44 +42,48 @@ public class AuthenticationService {
 
 
 
-    public ApplicationUser registerUser(RegistrationObject ro) throws Exception {
-        ApplicationUser user = new ApplicationUser();
-        HashSet<Role> roles = new HashSet<>();
+    public Boolean registerUser(RegistrationObject ro) throws Exception {
+            ApplicationUser user = new ApplicationUser();
+            HashSet<Role> roles = new HashSet<>();
 
-        roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
-        user.setAuthorities(roles);
-        logger.info("Received registration request for user password: {}", ro.getPassword());
+            roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
+            user.setAuthorities(roles);
+            logger.info("Received registration request for user password: {}", ro.getPassword());
 
-        // Set the user for the profile
-        logger.info("Received registration request for user: {}", ro);
-        UserProfile profile = new UserProfile();
-        profile.setBio(ro.getBio());
-        profile.setProfilePictureUrl(ro.getProfilePictureUrl());
-        user.setUserProfile(profile);
-        logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
+            // Set the user for the profile
+            logger.info("Received registration request for user: {}", ro);
+            UserProfile profile = new UserProfile();
+            profile.setBio(ro.getBio());
+            profile.setProfilePictureUrl(ro.getProfilePictureUrl());
+            profile.setUser(user);
+            logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
 
-        if(userRepo.findByEmail(ro.getEmail()).isPresent())
-        {
-            throw new UsernameOrEmailAlreadyTaken(ro.getEmail() );
-        }
-        user.setEmail(ro.getEmail());
-        user.setFirstName(ro.getFirstName());
-        user.setLastName(ro.getLastName());
-        user.setDateOfBirth(ro.getDob());
-        if(userRepo.findByUsername(ro.getUsername()).isPresent())
-        {
-            List<String> names = new ArrayList<>();
-            UsernameRecomAlgo recomAlgo = new UsernameRecomAlgo(userRepo);
-            names = recomAlgo.usernameRecommendation(ro.getUsername());
-            throw new UsernameOrEmailAlreadyTaken(names, ro.getUsername() );
+            if(userRepo.findByEmail(ro.getEmail()).isPresent())
+            {
+                throw new UsernameOrEmailAlreadyTaken(ro.getEmail() );
+            }
+            user.setEmail(ro.getEmail());
+            user.setFirstName(ro.getFirstName());
+            user.setLastName(ro.getLastName());
+            user.setDateOfBirth(ro.getDob());
+            user.setUserProfile(profile);
 
-        }
-        user.setUsername(ro.getUsername());
-        String encryPass = passwordEncoder.encode(ro.getPassword());
-        user.setPassword(encryPass);
-        logger.info("Received registration request for user encrypted password: {}",encryPass);
+            if(userRepo.findByUsername(ro.getUsername()).isPresent())
+            {
+                List<String> names = new ArrayList<>();
+                UsernameRecomAlgo recomAlgo = new UsernameRecomAlgo(userRepo);
+                names = recomAlgo.usernameRecommendation(ro.getUsername());
+                throw new UsernameOrEmailAlreadyTaken(names, ro.getUsername() );
 
-        return userRepo.save(user);
+            }
+            user.setUsername(ro.getUsername());
+            String encryPass = passwordEncoder.encode(ro.getPassword());
+            user.setPassword(encryPass);
+            logger.info("Received registration request for user encrypted password: {}",encryPass);
+            userRepo.save(user);
+            return true;
+
+
     }
 
 
@@ -107,7 +112,7 @@ public class AuthenticationService {
                 logger.info("User {} authenticated successfully", username);
 
                 // Generate JWT token
-                String token = tokenService.generateJwt(auth);
+                Map<String, String> tokens = tokenService.generateJwt(auth);
 
                 // Retrieve user from repository
                 Optional<ApplicationUser> optionalUser = userRepo.findByUsername(username);
@@ -116,23 +121,24 @@ public class AuthenticationService {
 
                     // Log the user details
                     logger.info("User details retrieved: {}", user);
+                    user.setLastLogin();
 
                     // Return LoginResponseDTO with user and token
-                    return new LoginResponseDTO(user, token, "");
+                    return new LoginResponseDTO(user, tokens);
                 } else {
                     logger.error("User {} not found in the repository", username);
                     // Handle case where user is not found
-                    return new LoginResponseDTO(null, null, null);
+                    return new LoginResponseDTO(null, null);
                 }
             } else {
                 // Handle case where authentication failed
                 logger.error("Authentication failed for user {}", username);
-                return new LoginResponseDTO(null, null, null);
+                return new LoginResponseDTO(null, null);
             }
         } catch(AuthenticationException e){
             // Handle authentication exception
             logger.error("Authentication exception for user {}: {}", username, e.getMessage());
-            return new LoginResponseDTO(null, null, null);
+            return new LoginResponseDTO(null, null);
         }
     }
 

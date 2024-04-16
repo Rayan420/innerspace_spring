@@ -17,6 +17,8 @@ public class KeyGeneratorUtility {
         {
             throw new IllegalStateException();
         }
+        System.out.println("public key  "+keyPair.getPublic() );
+        System.out.println("private key  "+keyPair.getPrivate() );
 
         return keyPair;
     }

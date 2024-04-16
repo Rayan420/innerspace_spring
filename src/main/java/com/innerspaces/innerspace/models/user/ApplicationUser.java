@@ -6,10 +6,13 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TimeZone;
 
 @Entity
 @Table(name = "users")
@@ -39,7 +42,7 @@ public class ApplicationUser implements UserDetails {
     private String password;
 
     private LocalDate dateJoined = LocalDate.now();
-    private LocalDate lastLogin;
+    private String lastLogin;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserProfile userProfile;
@@ -89,7 +92,7 @@ public class ApplicationUser implements UserDetails {
         this.isAccountNonLocked = true;
     }
 
-    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, LocalDate dateJoined, LocalDate lastLogin, UserProfile userProfile, Set<FollowRequest> sentFollowRequests, Set<FollowRequest> receivedFollowRequests, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
+    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, LocalDate dateJoined, String lastLogin, UserProfile userProfile, Set<FollowRequest> sentFollowRequests, Set<FollowRequest> receivedFollowRequests, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
         super();
         this.isCredentialsNonExpired = true;
         this.isEnabled = false;
@@ -172,7 +175,7 @@ public class ApplicationUser implements UserDetails {
         return dateJoined;
     }
 
-    public LocalDate getLastLogin() {
+    public String getLastLogin() {
         return lastLogin;
     }
 
@@ -226,8 +229,13 @@ public class ApplicationUser implements UserDetails {
 
 
 
-    public void setLastLogin(LocalDate lastLogin) {
-        this.lastLogin = lastLogin;
+    public void setLastLogin() {
+        java.util.Date currentDate = Date.from(Instant.now());
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT")); // Adjust timezone if needed
+        String formattedDate = sdf.format(currentDate);
+        System.out.println("Formatted Date: " + formattedDate); // Print for testing
+        this.lastLogin = formattedDate;
     }
 
     public void setUserProfile(UserProfile userProfile) {

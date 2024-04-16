@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models.user;
+package com.innerspaces.innerspace.models.auth;
 
 import java.sql.Date;
 

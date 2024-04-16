@@ -1,4 +1,5 @@
 package com.innerspaces.innerspace.models.user;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -14,6 +15,7 @@ public class UserProfile {
     @Column(name = "profile_id")
     private Long profileId;
 
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "user_id")
     private ApplicationUser user;
@@ -94,9 +96,6 @@ public class UserProfile {
         return lastUpdated;
     }
 
-    public void setLastUpdated() {
-        this.lastUpdated = LocalDate.now();
-    }
 
     public int getFollowerCount() {
         return followerCount;
@@ -130,5 +129,15 @@ public class UserProfile {
         this.followedSpaceCount = followedSpaceCount;
     }
 
+    public ApplicationUser getUser() {
+        return user;
+    }
 
+    public void setUser(ApplicationUser user) {
+        this.user = user;
+    }
+
+    public void setLastUpdated() {
+        this.lastUpdated = LocalDate.now();
+    }
 }
