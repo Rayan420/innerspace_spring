@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models.user;
+package com.innerspaces.innerspace.entities;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 

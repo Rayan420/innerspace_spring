@@ -1,5 +1,6 @@
-package com.innerspaces.innerspace.models.user;
+package com.innerspaces.innerspace.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.innerspaces.innerspace.entities.ApplicationUser;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 

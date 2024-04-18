@@ -1,33 +1,29 @@
-package com.innerspaces.innerspace.controller;
-
+package com.innerspaces.innerspace.controller.auth;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.models.auth.LoginObject;
 import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
 import com.innerspaces.innerspace.models.auth.RegistrationObject;
-import com.innerspaces.innerspace.services.AuthenticationService;
-import com.innerspaces.innerspace.services.UserService;
+import com.innerspaces.innerspace.services.auth.AuthenticationService;
+import com.innerspaces.innerspace.services.user.UserService;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.InvalidKeyException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin("*")
 public class AuthenticationController {
 
-    private final UserService userService;
     private final AuthenticationService authService;
 
     @Autowired
     public AuthenticationController(UserService userService, AuthenticationService authService) {
-        this.userService = userService;
         this.authService = authService;
     }
 
@@ -35,16 +31,15 @@ public class AuthenticationController {
     public ResponseEntity<String> handleEmailTaken(UsernameOrEmailAlreadyTaken ex)
     {
         String message = ex.getMessage();
-        return new ResponseEntity<String>(message, HttpStatus.CONFLICT);
+        return new ResponseEntity<>(message, HttpStatus.CONFLICT);
     }
     @ExceptionHandler(RoleDoesNotExistException.class)
     public ResponseEntity<String> handleRoleDoesNotExistException()
     {
-        return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-
-    @PostMapping("/register")
+    @RequestMapping(value = {"/register", "/register/"}, method = RequestMethod.POST, params = {})
     public ResponseEntity<?> registerUser(@RequestBody RegistrationObject ro) {
         try {
             // Attempt to register the user
@@ -64,7 +59,7 @@ public class AuthenticationController {
 
     private ResponseEntity<?> loginUserAfterRegistration(RegistrationObject ro) {
         try {
-            // Attempt to login the user
+            // Attempt to log the user
             LoginResponseDTO loginResponse = authService.loginUser(ro.getUsername(), ro.getPassword());
             if (loginResponse != null && loginResponse.getTokens() != null) {
                 // If login is successful, return the login response
@@ -81,7 +76,7 @@ public class AuthenticationController {
 
 
 
-    @PostMapping("/login")
+    @RequestMapping(value = {"/login", "/login/"}, method = RequestMethod.POST, params = {})
     public LoginResponseDTO loginUser(@RequestBody LoginObject lo) {
 
         System.out.println("login object from map:");
@@ -91,6 +86,33 @@ public class AuthenticationController {
         return authService.loginUser(lo.getUsername(), lo.getPassword());
     }
 
+
+    @ExceptionHandler
+    public ResponseEntity<?> InvalidKeyException()
+    {
+        return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler
+    public ResponseEntity<?> MessagingException()
+    {
+        return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+    }
+    @RequestMapping(value = {"/forgot-password/{email}/send", "/forgot-password/{email}/send/"},
+    method = RequestMethod.POST, params = {})
+    public ResponseEntity<?> forgotPassword(@PathVariable String email )
+    {
+        try {
+            return authService.sendForgotPasswordEmail(email);
+        } catch (InvalidKeyException | MessagingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @RequestMapping(value = "/forgot-password/{email}/otp", method = RequestMethod.POST)
+    public ResponseEntity<?> validateOTP(@PathVariable String email, @RequestParam("verify") String otp) {
+        System.out.println(otp);
+        return authService.verifyOTP(email, otp);
+    }
 
 
 

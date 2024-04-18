@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.services;
+package com.innerspaces.innerspace.services.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;

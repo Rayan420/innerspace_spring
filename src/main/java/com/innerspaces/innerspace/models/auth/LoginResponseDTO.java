@@ -1,6 +1,6 @@
 package com.innerspaces.innerspace.models.auth;
 
-import com.innerspaces.innerspace.models.user.ApplicationUser;
+import com.innerspaces.innerspace.entities.ApplicationUser;
 
 import java.util.Map;
 

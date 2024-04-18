@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to AudioSphere</title>
+</head>
+<body style="font-family: 'Arial', sans-serif;">
+
+<div style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+    <img src="https://example.com/logo.png" alt="AudioSphere Logo" style="max-width: 100px;">
+</div>
+
+<div style="padding: 20px;">
+    <h2>Welcome to AudioSphere!</h2>
+    <p>
+        Dear <span th:text="${firstname.toLowerCase()}"></span> <span th:text="${lastname.toLowerCase()}" ></span>,
+        <br>
+        We are thrilled to welcome you to AudioSphere, where you can explore the world of audio tweets and engaging conversations in spaces.
+        <br>
+        Here are a few things you can do on AudioSphere:
+    <ul>
+        <li>Share your thoughts through short audio tweets.</li>
+        <li>Explore and join live audio discussions in various spaces.</li>
+        <li>Follow spaces and users based on your interests.</li>
+        <li>Like and comment on audio tweets to interact with the community.</li>
+    </ul>
+    <br>
+    Get started by customizing your profile and exploring the diverse content available on the platform.
+    <br>
+    <br>
+
+    If you have any questions or need assistance, feel free to reach out to our support team.
+    <br>
+    <br>
+
+    Best regards,
+    <br>
+    The AudioSphere Team
+</div>
+
+<div style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+    <p style="color: #777; font-size: 12px;">© <span th:text="${#dates.year(#dates.createNow())}"></span> AudioSphere. All rights reserved.</p>
+</div>
+
+</body>
+</html>

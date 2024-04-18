@@ -1,4 +1,4 @@
-package com.innerspaces.innerspace.models.user;
+package com.innerspaces.innerspace.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -72,6 +72,9 @@ public class ApplicationUser implements UserDetails {
             joinColumns = @JoinColumn(name = "following_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<ApplicationUser> following = new HashSet<>();
+
+    @OneToOne(mappedBy = "user")
+    private ForgotPassword forgotpassword;
 
     private boolean isAccountNonExpired;
     private boolean isAccountNonLocked;

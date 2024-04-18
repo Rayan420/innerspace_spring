@@ -1,5 +1,6 @@
 package com.innerspaces.innerspace.config;
 
+import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import com.innerspaces.innerspace.utils.RSAKeyProperty;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -24,6 +25,10 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.crypto.KeyGenerator;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 
 @Configuration
 public class SecurityConfiguration {
@@ -50,6 +55,19 @@ public class SecurityConfiguration {
         return new ProviderManager(daoProvider);
     }
 
+    @Bean
+    public TimeBasedOneTimePasswordGenerator totp() {
+        return new TimeBasedOneTimePasswordGenerator();
+    }
+
+    @Bean
+    public Key secretKey() throws NoSuchAlgorithmException {
+        final KeyGenerator keyGenerator = KeyGenerator.getInstance(totp().getAlgorithm());
+        keyGenerator.init(160);
+        return keyGenerator.generateKey();
+    }
+
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http)
@@ -58,7 +76,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth ->
         {
             auth.requestMatchers("/auth/**").permitAll();
-            auth.anyRequest().authenticated();
+            //auth.anyRequest().authenticated();
         });
        http.oauth2ResourceServer((oauth2) -> oauth2
                .jwt(Customizer.withDefaults())

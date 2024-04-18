@@ -1,5 +1,6 @@
-package com.innerspaces.innerspace.models.user;
+package com.innerspaces.innerspace.entities;
 
+import com.innerspaces.innerspace.entities.ApplicationUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

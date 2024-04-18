@@ -1,5 +1,6 @@
-package com.innerspaces.innerspace.models.auth;
+package com.innerspaces.innerspace.entities;
 
+import com.innerspaces.innerspace.entities.RefreshToken;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
