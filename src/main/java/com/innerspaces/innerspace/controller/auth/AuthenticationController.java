@@ -1,17 +1,30 @@
 package com.innerspaces.innerspace.controller.auth;
+
+import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
-import com.innerspaces.innerspace.models.auth.*;
+import com.innerspaces.innerspace.models.auth.ForgotPasswordDTO;
+import com.innerspaces.innerspace.models.auth.ForgotPasswordResponseDTO;
+import com.innerspaces.innerspace.models.auth.LoginObject;
+import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
+import com.innerspaces.innerspace.models.auth.ProfileDTO;
+import com.innerspaces.innerspace.models.auth.RegistrationObject;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.security.InvalidKeyException;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -72,6 +85,12 @@ public class AuthenticationController {
         }
     }
 
+    @RequestMapping(value = {"/register/{username}/", "/register/{username}"}, method = RequestMethod.POST)
+    public ApplicationUser CompleteUserprofileSetup(@RequestBody ProfileDTO dto, @PathVariable String username)
+    {
+        System.out.println(dto);
+        return authService.setUserProfile(dto, username);
+    }
 
 
     @RequestMapping(value = {"/login", "/login/"}, method = RequestMethod.POST, params = {})

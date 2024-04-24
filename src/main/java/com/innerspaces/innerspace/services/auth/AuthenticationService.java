@@ -10,11 +10,13 @@ import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.models.auth.ForgotPasswordDTO;
 import com.innerspaces.innerspace.models.auth.ForgotPasswordResponseDTO;
 import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
+import com.innerspaces.innerspace.models.auth.ProfileDTO;
 import com.innerspaces.innerspace.models.auth.RegistrationObject;
 import com.innerspaces.innerspace.entities.Role;
 import com.innerspaces.innerspace.entities.UserProfile;
 import com.innerspaces.innerspace.repositories.auth.ForgotPasswordRepository;
 import com.innerspaces.innerspace.repositories.user.RoleRepository;
+import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
 import com.innerspaces.innerspace.services.EmailServiceImpl;
 import com.innerspaces.innerspace.utils.UsernameRecomAlgo;
@@ -50,6 +52,7 @@ public class AuthenticationService {
     private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepo;
+    private final UserProfileRepository profileRepo;
     private final EmailServiceImpl emailService;
     private final ForgotPasswordRepository fpRepo;
 
@@ -57,13 +60,14 @@ public class AuthenticationService {
     private final TimeBasedOneTimePasswordGenerator totp;
 
     @Autowired
-    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService, RoleRepository roleRepo, PasswordEncoder passwordEncoder, UserRepository userRepo, EmailServiceImpl emailService, ForgotPasswordRepository fpRepo, Key secrectKey, TimeBasedOneTimePasswordGenerator totp)
+    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService, RoleRepository roleRepo, PasswordEncoder passwordEncoder, UserRepository userRepo, UserProfileRepository profileRepo, EmailServiceImpl emailService, ForgotPasswordRepository fpRepo, Key secrectKey, TimeBasedOneTimePasswordGenerator totp)
     {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.roleRepo = roleRepo;
         this.passwordEncoder = passwordEncoder;
         this.userRepo = userRepo;
+        this.profileRepo = profileRepo;
         this.emailService = emailService;
         this.fpRepo = fpRepo;
         this.secrectKey = secrectKey;
@@ -71,7 +75,7 @@ public class AuthenticationService {
     }
 
 
-    public Boolean registerUser(RegistrationObject ro) {
+    public void registerUser(RegistrationObject ro) {
             ApplicationUser user = new ApplicationUser();
             HashSet<Role> roles = new HashSet<>();
 
@@ -82,8 +86,6 @@ public class AuthenticationService {
             // Set the user for the profile
             logger.info("Received registration request for user: {}", ro);
             UserProfile profile = new UserProfile();
-            profile.setBio(ro.getBio());
-            profile.setProfilePictureUrl(ro.getProfilePictureUrl());
             profile.setUser(user);
             logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
 
@@ -92,14 +94,11 @@ public class AuthenticationService {
                 throw new UsernameOrEmailAlreadyTaken(ro.getEmail().toLowerCase());
             }
             user.setEmail(ro.getEmail().toLowerCase());
-            user.setFirstName(ro.getFirstName().toLowerCase());
-            user.setLastName(ro.getLastName().toLowerCase());
-            user.setDateOfBirth(ro.getDob());
             user.setUserProfile(profile);
 
             if(userRepo.findByUsername(ro.getUsername()).isPresent())
             {
-                List<String> names = new ArrayList<>();
+                List<String> names;
                 UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
                 names = recommendation.usernameRecommendation(ro.getUsername());
                 throw new UsernameOrEmailAlreadyTaken(names, ro.getUsername().toLowerCase());
@@ -110,18 +109,30 @@ public class AuthenticationService {
             user.setPassword(encryptPass);
             logger.info("Received registration request for user encrypted password: {}",encryptPass);
             userRepo.save(user);
-            EmailModel model = new EmailModel( user.getFirstName(), user.getLastName(), user.getEmail(),"Welcome to innerspace", "welcome_email");
+            EmailModel model = new EmailModel( user.getUsername(), user.getEmail(),"Welcome to innerspace", "welcome_email");
             Context context = new Context();
-            context.setVariable("firstname", ro.getFirstName());
-            context.setVariable("lastname", ro.getLastName());
+            context.setVariable("username", ro.getUsername());
 
             emailService.sendRegistrationEmail(model, context );
-
-            return true;
 
 
     }
 
+    public ApplicationUser setUserProfile(ProfileDTO dto, String username)
+    throws UsernameNotFoundException{
+        ApplicationUser user =  userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
+        UserProfile profile = profileRepo.findUserProfileByUser(user).orElse(new UserProfile());
+        profile.setBio(dto.getBio());
+        profile.setProfilePictureUrl(dto.getProfilePictureUrl());
+        profileRepo.save(profile);
+        user.setUserProfile(profile);
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setDateOfBirth(dto.getDob());
+        userRepo.save(user);
+
+        return user;
+    }
 
     public LoginResponseDTO loginUser(String username, String password){
         logger.info("Received credentials: Username: {}, Password: {}", username, password);
@@ -169,14 +180,8 @@ public class AuthenticationService {
 
 
     public String generateOTP() throws InvalidKeyException {
-        try{
-            Instant now = Instant.now();
-            return totp.generateOneTimePasswordString(secrectKey, now );
-        }
-        catch (Exception e)
-        {
-            throw e;
-        }
+        Instant now = Instant.now();
+        return totp.generateOneTimePasswordString(secrectKey, now );
     }
 
     public ForgotPasswordResponseDTO sendForgotPasswordEmail(String email) throws InvalidKeyException, MessagingException {
@@ -207,14 +212,14 @@ public class AuthenticationService {
         Optional<ForgotPassword> forgotPasswordOpt = fpRepo.findByOtpAndUser(otp, user);
         if (forgotPasswordOpt.isEmpty()) {
             ForgotPasswordResponseDTO dto = new ForgotPasswordResponseDTO();
-            dto.setMessage("Invalid OTP code");;
+            dto.setMessage("Invalid OTP code");
             return new ResponseEntity<>( dto, HttpStatus.CONFLICT);
         }
 
         ForgotPassword fp = forgotPasswordOpt.get();
         if (!fp.getOtp().equals(otp) || !fp.getUser().equals(user) || fp.isExpired()) {
             ForgotPasswordResponseDTO dto = new ForgotPasswordResponseDTO();
-            dto.setMessage("OTP code is Invalid or has Expired");;
+            dto.setMessage("OTP code is Invalid or has Expired");
             return new ResponseEntity<>( dto, HttpStatus.CONFLICT);
         }
         if(Instant.now().isAfter(fp.getExpirationDate()))
@@ -222,7 +227,7 @@ public class AuthenticationService {
 
             fp.setExpired(true);
             ForgotPasswordResponseDTO dto = new ForgotPasswordResponseDTO();
-            dto.setMessage("OTP code has expired");;
+            dto.setMessage("OTP code has expired");
             return new ResponseEntity<>( dto, HttpStatus.CONFLICT);
         }
 
