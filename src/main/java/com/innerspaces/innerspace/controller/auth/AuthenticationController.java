@@ -1,9 +1,7 @@
 package com.innerspaces.innerspace.controller.auth;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
-import com.innerspaces.innerspace.models.auth.LoginObject;
-import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
-import com.innerspaces.innerspace.models.auth.RegistrationObject;
+import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.mail.MessagingException;
@@ -87,19 +85,19 @@ public class AuthenticationController {
     }
 
 
-    @ExceptionHandler
+    @ExceptionHandler(InvalidKeyException.class)
     public ResponseEntity<?> InvalidKeyException()
     {
         return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     }
-    @ExceptionHandler
+    @ExceptionHandler(MessagingException.class)
     public ResponseEntity<?> MessagingException()
     {
         return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     }
     @RequestMapping(value = {"/forgot-password/{email}/send", "/forgot-password/{email}/send/"},
     method = RequestMethod.POST, params = {})
-    public ResponseEntity<?> forgotPassword(@PathVariable String email )
+    public ForgotPasswordResponseDTO forgotPassword(@PathVariable String email )
     {
         try {
             return authService.sendForgotPasswordEmail(email);
@@ -109,10 +107,17 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/forgot-password/{email}/otp", method = RequestMethod.POST)
-    public ResponseEntity<?> validateOTP(@PathVariable String email, @RequestParam("verify") String otp) {
+    public ResponseEntity<ForgotPasswordResponseDTO> validateOTP(@PathVariable String email, @RequestParam("verify") String otp) {
         System.out.println(otp);
         return authService.verifyOTP(email, otp);
     }
+
+    @RequestMapping(value = {"/forgot-password/{email}/change"}, method = RequestMethod.POST)
+    public ResponseEntity<?> changePassword(@PathVariable String email, @RequestBody ForgotPasswordDTO body)
+    {
+        return authService.changePassword(email, body);
+    }
+
 
 
 

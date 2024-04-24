@@ -264,4 +264,9 @@ public class ApplicationUser implements UserDetails {
     public void setFollowing(Set<ApplicationUser> following) {
         this.following = following;
     }
+
+    public String getName()
+    {
+        return this.firstName + " " + this.lastName;
+    }
 }
