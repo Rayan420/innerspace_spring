@@ -1,6 +1,7 @@
 package com.innerspaces.innerspace.models.auth;
 
 public class LoginObject {
+
     private String username;
     private String password;
 

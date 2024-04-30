@@ -4,6 +4,10 @@ public class EmailModel {
         private String to;
         private String subject;
         private String templateName;
+
+        private String firstName;
+
+        private String lastName;
         private String username;
 
 
@@ -12,6 +16,30 @@ public class EmailModel {
         this.subject = subject;
         this.templateName = templateName;
         this.username=username;
+    }
+
+    public EmailModel(String to, String subject, String templateName, String firstName, String lastName) {
+        this.to = to;
+        this.subject = subject;
+        this.templateName = templateName;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public EmailModel(String to, String subject, String templateName) {

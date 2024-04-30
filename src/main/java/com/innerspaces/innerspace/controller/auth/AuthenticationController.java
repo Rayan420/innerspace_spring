@@ -3,12 +3,7 @@ package com.innerspaces.innerspace.controller.auth;
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
-import com.innerspaces.innerspace.models.auth.ForgotPasswordDTO;
-import com.innerspaces.innerspace.models.auth.ForgotPasswordResponseDTO;
-import com.innerspaces.innerspace.models.auth.LoginObject;
-import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
-import com.innerspaces.innerspace.models.auth.ProfileDTO;
-import com.innerspaces.innerspace.models.auth.RegistrationObject;
+import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.mail.MessagingException;
@@ -127,12 +122,12 @@ public class AuthenticationController {
 
     @RequestMapping(value = "/forgot-password/{email}/otp", method = RequestMethod.POST)
     public ResponseEntity<ForgotPasswordResponseDTO> validateOTP(@PathVariable String email, @RequestParam("verify") String otp) {
-        System.out.println(otp);
+        System.out.println("info sent by user to verify otp " + otp + email);
         return authService.verifyOTP(email, otp);
     }
 
     @RequestMapping(value = {"/forgot-password/{email}/change"}, method = RequestMethod.POST)
-    public ResponseEntity<?> changePassword(@PathVariable String email, @RequestBody ForgotPasswordDTO body)
+    public ResponseEntity<MessageDTO> changePassword(@PathVariable String email, @RequestBody ForgotPasswordDTO body)
     {
         return authService.changePassword(email, body);
     }

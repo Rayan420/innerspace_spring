@@ -7,11 +7,7 @@ import com.innerspaces.innerspace.models.EmailModel;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
 import com.innerspaces.innerspace.entities.ApplicationUser;
-import com.innerspaces.innerspace.models.auth.ForgotPasswordDTO;
-import com.innerspaces.innerspace.models.auth.ForgotPasswordResponseDTO;
-import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
-import com.innerspaces.innerspace.models.auth.ProfileDTO;
-import com.innerspaces.innerspace.models.auth.RegistrationObject;
+import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.entities.Role;
 import com.innerspaces.innerspace.entities.UserProfile;
 import com.innerspaces.innerspace.repositories.auth.ForgotPasswordRepository;
@@ -87,14 +83,18 @@ public class AuthenticationService {
             logger.info("Received registration request for user: {}", ro);
             UserProfile profile = new UserProfile();
             profile.setUser(user);
-            logger.info("user profile created: {}", user.getUserProfile()); // This will log the profile data
 
-            if(userRepo.findByEmail(ro.getEmail()).isPresent())
+
+
+        if(userRepo.findByEmail(ro.getEmail()).isPresent())
             {
                 throw new UsernameOrEmailAlreadyTaken(ro.getEmail().toLowerCase());
             }
+        user.setFirstName(ro.getFirstName());
+        user.setLastName(ro.getLastName());
             user.setEmail(ro.getEmail().toLowerCase());
             user.setUserProfile(profile);
+
 
             if(userRepo.findByUsername(ro.getUsername()).isPresent())
             {
@@ -109,11 +109,13 @@ public class AuthenticationService {
             user.setPassword(encryptPass);
             logger.info("Received registration request for user encrypted password: {}",encryptPass);
             userRepo.save(user);
-            EmailModel model = new EmailModel( user.getUsername(), user.getEmail(),"Welcome to innerspace", "welcome_email");
+            EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
             Context context = new Context();
-            context.setVariable("username", ro.getUsername());
+            context.setVariable("firstName", ro.getFirstName());
+        context.setVariable("lastName", ro.getLastName());
 
-            emailService.sendRegistrationEmail(model, context );
+
+        emailService.sendRegistrationEmail(model, context );
 
 
     }
@@ -185,27 +187,46 @@ public class AuthenticationService {
     }
 
     public ForgotPasswordResponseDTO sendForgotPasswordEmail(String email) throws InvalidKeyException, MessagingException {
-        if(userRepo.findByEmail(email).isPresent())
-        {
-            ApplicationUser user = userRepo.findByEmail(email).get();
-            EmailModel model = new EmailModel( user.getEmail(),"Welcome to innerspace", "password_reset");
+        Optional<ApplicationUser> optionalUser = userRepo.findByEmail(email);
+        if(optionalUser.isPresent()) {
+            ApplicationUser user = optionalUser.get();
+            EmailModel model = new EmailModel(user.getEmail(),"Welcome to innerspace", "password_reset");
             Context context = new Context();
-            String otp = generateOTP();
-            System.out.println("your otp is "+ otp);
-            context.setVariable("otp", otp );
-            ForgotPassword fpotp = new ForgotPassword();
-            fpotp.setOtp(otp);
-            fpotp.setUser(user);
-            fpotp.setExpirationDate(Instant.now().plusSeconds(300));
-            fpRepo.save(fpotp);
+            String otp = generateOTP(); // Generate a new OTP each time
+            System.out.println("Your OTP is " + otp);
+            context.setVariable("otp", otp);
+
+            // Check if there's an existing record for the user
+            Optional<ForgotPassword> existingRecord = fpRepo.findByUser(user);
+            if(existingRecord.isPresent()) {
+                // Update the existing OTP record with the new OTP
+                ForgotPassword existingForgotPassword = existingRecord.get();
+                existingForgotPassword.setOtp(otp);
+                existingForgotPassword.setExpired(false);
+                existingForgotPassword.setExpirationDate(Instant.now().plusSeconds(120));
+
+                fpRepo.save(existingForgotPassword);
+            } else {
+                // Create a new OTP record for the user with the new OTP
+                ForgotPassword newForgotPassword = new ForgotPassword();
+                newForgotPassword.setOtp(otp);
+                newForgotPassword.setUser(user);
+                newForgotPassword.setExpirationDate(Instant.now().plusSeconds(120));
+                fpRepo.save(newForgotPassword);
+            }
+
+            // Send the email with the new OTP
             emailService.sendForgotPasswordEmail(model, otp, context);
+
             return new ForgotPasswordResponseDTO("Reset link has been sent to your email");
         }
         return new ForgotPasswordResponseDTO("Reset link has been sent to your email");
-
     }
 
+
     public ResponseEntity<ForgotPasswordResponseDTO> verifyOTP(String email, String otp) {
+        logger.info("information recieved " + email + otp);
+
         ApplicationUser user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -230,7 +251,6 @@ public class AuthenticationService {
             dto.setMessage("OTP code has expired");
             return new ResponseEntity<>( dto, HttpStatus.CONFLICT);
         }
-
         ForgotPasswordResponseDTO dto = new ForgotPasswordResponseDTO(tokenService.generateOtpToken(otp, user),"OTP valid");
         fp.setExpired(true);
         // OTP is valid
@@ -239,16 +259,16 @@ public class AuthenticationService {
     }
 
 
-    public ResponseEntity<?> changePassword(String email, ForgotPasswordDTO dto)
+    public ResponseEntity<MessageDTO> changePassword(String email, ForgotPasswordDTO dto)
     throws UsernameNotFoundException{
        ApplicationUser user = userRepo.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
         if(tokenService.verifyOtpToken(dto.getToken(), user))
         {
             user.setPassword(passwordEncoder.encode(dto.getPassword()));
             userRepo.save(user);
-            return new ResponseEntity<>("Password changed successfully, you can now login", HttpStatus.OK);
+            return new ResponseEntity<>(new MessageDTO("Password changed successfully, you can now login"), HttpStatus.OK);
         }
-        return new ResponseEntity<>("Password reset failed, something went wrong", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new MessageDTO("Password reset failed, something went wrong"), HttpStatus.BAD_REQUEST);
 
 
     }

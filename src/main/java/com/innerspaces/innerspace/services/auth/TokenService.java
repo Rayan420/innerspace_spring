@@ -67,7 +67,7 @@ public class TokenService {
     public String generateOtpToken(String otp, ApplicationUser user)
     {
         Instant now = Instant.now();
-        Instant exp = now.plusSeconds(150);
+        Instant exp = now.plusSeconds(12000);
 
         JwtClaimsSet otpToken = JwtClaimsSet.builder()
                 .issuer("self")
