@@ -13,10 +13,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,8 +31,10 @@ import javax.crypto.KeyGenerator;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 
+
 @Configuration
-public class SecurityConfiguration {
+@EnableWebSecurity
+public class SecurityConfiguration   {
     private final RSAKeyProperty keys;
 
     public SecurityConfiguration(RSAKeyProperty keys)
@@ -68,20 +71,26 @@ public class SecurityConfiguration {
     }
 
 
+    @Bean
+    public SecurityContextHolder securityContextHolder()
+    {
+        return new SecurityContextHolder();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http)
-    throws Exception{
+            throws Exception{
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(auth ->
         {
+            auth.requestMatchers("/auth/logout/**").authenticated();
             auth.requestMatchers("/auth/**").permitAll();
-            //auth.anyRequest().authenticated();
+            auth.anyRequest().authenticated();
         });
-       http.oauth2ResourceServer((oauth2) -> oauth2
-               .jwt(Customizer.withDefaults())
-       );
-       http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.oauth2ResourceServer((oauth2) -> oauth2
+                .jwt(jwt -> jwt.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter()))
+        );
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
@@ -91,6 +100,12 @@ public class SecurityConfiguration {
     {
         return NimbusJwtDecoder.withPublicKey(keys.getPublicKey()).build();
     }
+
+    @Bean
+    public CustomJwtAuthenticationConverter jwtAuthenticationConverter() {
+        return new CustomJwtAuthenticationConverter();
+    }
+
 
     @Bean
     public JwtEncoder jwtEncoder()

@@ -2,13 +2,15 @@ package com.innerspaces.innerspace.controller.auth;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
-import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
+import com.innerspaces.innerspace.exceptions.EmailTaken;
+import com.innerspaces.innerspace.exceptions.UsernameTaken;
 import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,8 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.sql.Date;
 
 @RestController
 @RequestMapping("/auth")
@@ -28,21 +33,31 @@ public class AuthenticationController {
 
     private final AuthenticationService authService;
 
+
     @Autowired
     public AuthenticationController(UserService userService, AuthenticationService authService) {
         this.authService = authService;
     }
 
-    @ExceptionHandler({UsernameOrEmailAlreadyTaken.class})
-    public ResponseEntity<String> handleEmailTaken(UsernameOrEmailAlreadyTaken ex)
+    @ExceptionHandler({EmailTaken.class})
+    public ResponseEntity<String> handleEmailTaken(EmailTaken ex)
     {
         String message = ex.getMessage();
         return new ResponseEntity<>(message, HttpStatus.CONFLICT);
     }
+
+
     @ExceptionHandler(RoleDoesNotExistException.class)
     public ResponseEntity<String> handleRoleDoesNotExistException()
     {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    // Exception handler for UsernameTaken exception
+    @ExceptionHandler(UsernameTaken.class)
+    public ResponseEntity<String> handleUsernameTaken(UsernameTaken ex) {
+        String message = ex.getMessage();
+        return new ResponseEntity<>(message, HttpStatus.CONFLICT);
     }
 
     @RequestMapping(value = {"/register", "/register/"}, method = RequestMethod.POST, params = {})
@@ -50,17 +65,17 @@ public class AuthenticationController {
         try {
             // Attempt to register the user
             authService.registerUser(ro);
-        } catch (UsernameOrEmailAlreadyTaken e) {
+            // If registration succeeds, return login response
+            return loginUserAfterRegistration(ro);
+        } catch (EmailTaken e) {
             // Handle the custom exception for duplicate username or email
             return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         } catch (RoleDoesNotExistException e) {
             // Handle the custom exception for non-existing role
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            // Handle any other exceptions during registration
-            return new ResponseEntity<>("Registration failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (UsernameTaken e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         }
-        return loginUserAfterRegistration(ro);
     }
 
     private ResponseEntity<?> loginUserAfterRegistration(RegistrationObject ro) {
@@ -80,9 +95,18 @@ public class AuthenticationController {
         }
     }
 
-    @RequestMapping(value = {"/register/{username}/", "/register/{username}"}, method = RequestMethod.POST)
-    public ApplicationUser CompleteUserprofileSetup(@RequestBody ProfileDTO dto, @PathVariable String username)
-    {
+    @RequestMapping(value = {"/register/{username}/", "/register/{username}"},
+            method = RequestMethod.POST,
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApplicationUser CompleteUserprofileSetup(@RequestParam("profile") MultipartFile profile,
+                                                    @RequestParam("bio") String bio,
+                                                    @RequestParam("dob") Date dob,
+                                                    @PathVariable String username) throws IOException {
+        ProfileDTO dto = new ProfileDTO(dob, bio);
+        if(!profile.isEmpty())
+        {
+            dto.setProfilePicture(profile.getBytes());
+        }
         System.out.println(dto);
         return authService.setUserProfile(dto, username);
     }
@@ -104,11 +128,13 @@ public class AuthenticationController {
     {
         return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     }
+
     @ExceptionHandler(MessagingException.class)
     public ResponseEntity<?> MessagingException()
     {
         return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
     }
+
     @RequestMapping(value = {"/forgot-password/{email}/send", "/forgot-password/{email}/send/"},
     method = RequestMethod.POST, params = {})
     public ForgotPasswordResponseDTO forgotPassword(@PathVariable String email )
@@ -133,6 +159,12 @@ public class AuthenticationController {
     }
 
 
+    @RequestMapping(value = { "/logout/{username}"},
+            method = RequestMethod.POST)
+    public ResponseEntity<MessageDTO> logout(@PathVariable String username)
+    {
+        return authService.logout(username);
+    }
 
 
 }

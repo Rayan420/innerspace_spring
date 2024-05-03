@@ -8,9 +8,11 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<ApplicationUser, Integer> {
-    Optional<ApplicationUser> findByUsername(String username);
+    Optional<ApplicationUser> findByEmail(String email);
 
+
+    Optional<ApplicationUser> findByUsername(String username);
+    Optional<ApplicationUser> findByRefreshId(String refreshId);
     @Query("select u.username from ApplicationUser u where u.username like ?1%")
     Optional<String> findByUsernameLike(String username);
-    Optional<ApplicationUser> findByEmail(String email);
 }

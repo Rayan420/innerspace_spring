@@ -82,6 +82,11 @@ public class ApplicationUser implements UserDetails {
 
     private boolean isEnabled;
 
+    @Column(name = "refresh_id", unique = true)
+    @JsonIgnore
+    private String refreshId;
+
+
 
 
 
@@ -268,5 +273,13 @@ public class ApplicationUser implements UserDetails {
     public String getName()
     {
         return this.firstName + " " + this.lastName;
+    }
+
+    public String getRefreshId() {
+        return refreshId;
+    }
+
+    public void setRefreshId(String refreshId) {
+        this.refreshId = refreshId;
     }
 }

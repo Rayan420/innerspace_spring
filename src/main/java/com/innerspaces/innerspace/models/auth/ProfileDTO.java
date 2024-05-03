@@ -3,28 +3,17 @@ package com.innerspaces.innerspace.models.auth;
 import java.sql.Date;
 
 public class ProfileDTO {
-    private String firstName;
-    private String lastName;
     private Date dob;
-    private String profilePictureUrl;
+    private byte[] profilePicture;
     private String bio;
 
 
-
-    public String getFirstName() {
-        return firstName;
+    public ProfileDTO() {
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public ProfileDTO(Date dob, String bio) {
+        this.dob = dob;
+        this.bio = bio;
     }
 
     public Date getDob() {
@@ -35,12 +24,12 @@ public class ProfileDTO {
         this.dob = dob;
     }
 
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public byte[] getProfilePicture() {
+        return profilePicture;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setProfilePicture(byte[] profilePicture) {
+        this.profilePicture = profilePicture;
     }
 
     public String getBio() {

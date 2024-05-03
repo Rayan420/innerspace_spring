@@ -21,8 +21,8 @@ public class UserProfile {
     @JoinColumn(name = "user_id")
     private ApplicationUser user;
 
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
+    @Column(name = "profile_picture")
+    private byte[] profilePicture;
 
     @Column(name = "bio", columnDefinition = "text")
     private String bio;
@@ -55,8 +55,8 @@ public class UserProfile {
         super();
     }
 
-    public UserProfile(String profilePictureUrl, String bio) {
-        this.profilePictureUrl = profilePictureUrl;
+    public UserProfile(byte[] profilePicture, String bio) {
+        this.profilePicture = profilePicture;
         this.bio = bio;
     }
     // Getters and setters
@@ -69,12 +69,16 @@ public class UserProfile {
         this.profileId = profileId;
     }
 
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public byte[] getProfilePicture() {
+        return profilePicture;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setProfilePicture(byte[] profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public void setLastUpdated(LocalDate lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
     public String getBio() {

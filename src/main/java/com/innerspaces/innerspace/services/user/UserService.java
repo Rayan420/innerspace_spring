@@ -14,27 +14,63 @@ import org.springframework.stereotype.Service;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepo;
-    private final PasswordEncoder passwordEncoder;
-
 
 
     @Autowired
     public UserService(UserRepository userRepo, PasswordEncoder passwordEncoder)
     {
         this.userRepo = userRepo;
-        this.passwordEncoder = passwordEncoder;
     }
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("In the user details service");
-        System.out.println(userRepo.findByUsername(username).get());
+        ApplicationUser user = userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("user is not valid"));
+        if(user==null)
+        {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), user.getAuthorities());
+    }
 
-        return userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("user is not valid"));
+    public ApplicationUser getUserByRefreshId(String refreshId)
+    {
+
+        ApplicationUser user = userRepo.findByRefreshId(refreshId).orElseThrow(() -> new UsernameNotFoundException("user is not valid"));
+        if(user==null)
+        {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return user;
+    }
+    public ApplicationUser getUserByUsername(String username)
+    {
+        ApplicationUser user = userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("user is not valid"));
+        if(user==null)
+        {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return user;
     }
 
     public ApplicationUser loadUserByEmail(String email) throws UsernameNotFoundException {
         return userRepo.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("email is not valid"));
 
+    }
+
+    public boolean emailExist(String email)
+    {
+        return userRepo.findByEmail(email).isPresent();
+    }
+
+    public boolean usernameExist(String username)
+    {
+        return userRepo.findByUsername(username).isPresent();
+    }
+
+
+    public void saveUser(ApplicationUser user)
+    {
+        userRepo.save(user);
     }
 }

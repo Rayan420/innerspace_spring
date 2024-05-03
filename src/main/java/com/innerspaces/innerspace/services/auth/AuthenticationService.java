@@ -3,9 +3,10 @@ package com.innerspaces.innerspace.services.auth;
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import com.innerspaces.innerspace.controller.auth.AuthenticationController;
 import com.innerspaces.innerspace.entities.ForgotPassword;
+import com.innerspaces.innerspace.exceptions.UsernameTaken;
 import com.innerspaces.innerspace.models.EmailModel;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
-import com.innerspaces.innerspace.exceptions.UsernameOrEmailAlreadyTaken;
+import com.innerspaces.innerspace.exceptions.EmailTaken;
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.entities.Role;
@@ -15,6 +16,7 @@ import com.innerspaces.innerspace.repositories.user.RoleRepository;
 import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
 import com.innerspaces.innerspace.services.EmailServiceImpl;
+import com.innerspaces.innerspace.services.user.UserService;
 import com.innerspaces.innerspace.utils.UsernameRecomAlgo;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,6 +30,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -55,8 +58,12 @@ public class AuthenticationService {
     private final Key secrectKey;
     private final TimeBasedOneTimePasswordGenerator totp;
 
+    private final SecurityContextHolder holder;
+
+    private final UserService userService;
+
     @Autowired
-    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService, RoleRepository roleRepo, PasswordEncoder passwordEncoder, UserRepository userRepo, UserProfileRepository profileRepo, EmailServiceImpl emailService, ForgotPasswordRepository fpRepo, Key secrectKey, TimeBasedOneTimePasswordGenerator totp)
+    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService, RoleRepository roleRepo, PasswordEncoder passwordEncoder, UserRepository userRepo, UserProfileRepository profileRepo, EmailServiceImpl emailService, ForgotPasswordRepository fpRepo, Key secrectKey, TimeBasedOneTimePasswordGenerator totp, SecurityContextHolder holder, UserService userService)
     {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
@@ -68,54 +75,69 @@ public class AuthenticationService {
         this.fpRepo = fpRepo;
         this.secrectKey = secrectKey;
         this.totp = totp;
+        this.holder = holder;
+        this.userService = userService;
     }
 
 
-    public void registerUser(RegistrationObject ro) {
-            ApplicationUser user = new ApplicationUser();
-            HashSet<Role> roles = new HashSet<>();
-
-            roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
-            user.setAuthorities(roles);
-            logger.info("Received registration request for user password: {}", ro.getPassword());
-
-            // Set the user for the profile
-            logger.info("Received registration request for user: {}", ro);
-            UserProfile profile = new UserProfile();
-            profile.setUser(user);
+    public void registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
+       try
+       {
 
 
+           System.out.println("EMail present " + userService.emailExist(ro.getEmail()) +" " + "usernamme present "+ userService.usernameExist(ro.getUsername()));
+           if(userService.emailExist(ro.getEmail().toLowerCase()))
+           {
+               throw new EmailTaken(ro.getEmail().toLowerCase());
+           }
+           else if(userService.usernameExist(ro.getUsername().toLowerCase()))
+           {
+               logger.warn("username duplicate {}" + ro.getUsername());
+               List<String> names;
+               UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
+               names = recommendation.usernameRecommendation(ro.getUsername());
 
-        if(userRepo.findByEmail(ro.getEmail()).isPresent())
-            {
-                throw new UsernameOrEmailAlreadyTaken(ro.getEmail().toLowerCase());
-            }
-        user.setFirstName(ro.getFirstName());
-        user.setLastName(ro.getLastName());
-            user.setEmail(ro.getEmail().toLowerCase());
-            user.setUserProfile(profile);
+               throw new UsernameTaken("username taken try these instead : ", names);
+
+           }
+           else
+           {
+               ApplicationUser user = new ApplicationUser();
+               HashSet<Role> roles = new HashSet<>();
+
+               roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
+               user.setAuthorities(roles);
+               logger.info("Received registration request for user password: {}", ro.getPassword());
+
+               // Set the user for the profile
+               logger.info("Received registration request for user: {}", ro.getUsername() + ro.getEmail());
+               UserProfile profile = new UserProfile();
+               profile.setUser(user);
+               user.setFirstName(ro.getFirstName());
+               user.setLastName(ro.getLastName());
+               user.setEmail(ro.getEmail().toLowerCase());
+               user.setUserProfile(profile);
 
 
-            if(userRepo.findByUsername(ro.getUsername()).isPresent())
-            {
-                List<String> names;
-                UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
-                names = recommendation.usernameRecommendation(ro.getUsername());
-                throw new UsernameOrEmailAlreadyTaken(names, ro.getUsername().toLowerCase());
-
-            }
-            user.setUsername(ro.getUsername().toLowerCase());
-            String encryptPass = passwordEncoder.encode(ro.getPassword());
-            user.setPassword(encryptPass);
-            logger.info("Received registration request for user encrypted password: {}",encryptPass);
-            userRepo.save(user);
-            EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
-            Context context = new Context();
-            context.setVariable("firstName", ro.getFirstName());
-        context.setVariable("lastName", ro.getLastName());
+               user.setUsername(ro.getUsername().toLowerCase());
+               String encryptPass = passwordEncoder.encode(ro.getPassword());
+               user.setPassword(encryptPass);
+               logger.info("Received registration request for user encrypted password: {}",encryptPass);
+               userRepo.save(user);
+               EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
+               Context context = new Context();
+               context.setVariable("firstName", ro.getFirstName());
+               context.setVariable("lastName", ro.getLastName());
 
 
-        emailService.sendRegistrationEmail(model, context );
+               emailService.sendRegistrationEmail(model, context );
+           }
+
+       }
+       catch (UsernameTaken | EmailTaken e)
+       {
+           throw e;
+       }
 
 
     }
@@ -125,11 +147,9 @@ public class AuthenticationService {
         ApplicationUser user =  userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
         UserProfile profile = profileRepo.findUserProfileByUser(user).orElse(new UserProfile());
         profile.setBio(dto.getBio());
-        profile.setProfilePictureUrl(dto.getProfilePictureUrl());
+        profile.setProfilePicture(dto.getProfilePicture());
         profileRepo.save(profile);
         user.setUserProfile(profile);
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
         user.setDateOfBirth(dto.getDob());
         userRepo.save(user);
 
@@ -180,6 +200,14 @@ public class AuthenticationService {
         }
     }
 
+
+    public ResponseEntity<MessageDTO> logout(String username) {
+
+        ApplicationUser user = userService.getUserByUsername(username);
+        user.setRefreshId(null);
+        MessageDTO dto = new MessageDTO("Logout successful");
+        return new ResponseEntity<>(dto, HttpStatus.OK);
+    }
 
     public String generateOTP() throws InvalidKeyException {
         Instant now = Instant.now();
@@ -271,6 +299,13 @@ public class AuthenticationService {
         return new ResponseEntity<>(new MessageDTO("Password reset failed, something went wrong"), HttpStatus.BAD_REQUEST);
 
 
+    }
+
+
+    public void test()
+    {
+
+        System.out.println(holder.toString());
     }
 
 
