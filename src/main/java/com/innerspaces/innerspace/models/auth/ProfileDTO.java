@@ -4,7 +4,7 @@ import java.sql.Date;
 
 public class ProfileDTO {
     private Date dob;
-    private byte[] profilePicture;
+    private String profileImageUrl;
     private String bio;
 
 
@@ -24,12 +24,12 @@ public class ProfileDTO {
         this.dob = dob;
     }
 
-    public byte[] getProfilePicture() {
-        return profilePicture;
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public String getBio() {

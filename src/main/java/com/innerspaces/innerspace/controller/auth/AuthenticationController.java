@@ -1,35 +1,31 @@
 package com.innerspaces.innerspace.controller.auth;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.entities.ProfileImage;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.EmailTaken;
 import com.innerspaces.innerspace.exceptions.UsernameTaken;
 import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
+import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
-import java.sql.Date;
+
 
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin("*")
 public class AuthenticationController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     private final AuthenticationService authService;
 
@@ -95,21 +91,6 @@ public class AuthenticationController {
         }
     }
 
-    @RequestMapping(value = {"/register/{username}/", "/register/{username}"},
-            method = RequestMethod.POST,
-    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApplicationUser CompleteUserprofileSetup(@RequestParam("profile") MultipartFile profile,
-                                                    @RequestParam("bio") String bio,
-                                                    @RequestParam("dob") Date dob,
-                                                    @PathVariable String username) throws IOException {
-        ProfileDTO dto = new ProfileDTO(dob, bio);
-        if(!profile.isEmpty())
-        {
-            dto.setProfilePicture(profile.getBytes());
-        }
-        System.out.println(dto);
-        return authService.setUserProfile(dto, username);
-    }
 
 
     @RequestMapping(value = {"/login", "/login/"}, method = RequestMethod.POST, params = {})
@@ -164,6 +145,26 @@ public class AuthenticationController {
     public ResponseEntity<MessageDTO> logout(@PathVariable String username)
     {
         return authService.logout(username);
+    }
+
+
+    @RequestMapping(value = { "/refresh/"},
+            method = RequestMethod.POST )
+    public ResponseEntity<?> refreshToken(@RequestParam("Token") String token)
+    {
+        System.out.println("--------TOKEN ---------- "+token);
+        String newToken = authService.refreshToken(token);
+        // return the new token
+      if(newToken != null)
+      {
+          return new ResponseEntity<>(new Refresh(newToken), HttpStatus.OK);
+      }
+      else
+      {
+          // return an error message saying token is invalid
+            return new ResponseEntity<>(new MessageDTO("Token is expired or does not exist"), HttpStatus.CONFLICT);
+      }
+
     }
 
 

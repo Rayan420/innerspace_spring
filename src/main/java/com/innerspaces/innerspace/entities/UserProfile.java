@@ -22,7 +22,12 @@ public class UserProfile {
     private ApplicationUser user;
 
     @Column(name = "profile_picture")
-    private byte[] profilePicture;
+    private String profileImageUrl;
+
+    @JsonIgnore
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private ProfileImage profileImage;
+
 
     @Column(name = "bio", columnDefinition = "text")
     private String bio;
@@ -55,8 +60,8 @@ public class UserProfile {
         super();
     }
 
-    public UserProfile(byte[] profilePicture, String bio) {
-        this.profilePicture = profilePicture;
+    public UserProfile(String profileImageUrl, String bio) {
+        this.profileImageUrl = profileImageUrl;
         this.bio = bio;
     }
     // Getters and setters
@@ -69,12 +74,13 @@ public class UserProfile {
         this.profileId = profileId;
     }
 
-    public byte[] getProfilePicture() {
-        return profilePicture;
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void setLastUpdated(LocalDate lastUpdated) {
@@ -144,5 +150,13 @@ public class UserProfile {
 
     public void setLastUpdated() {
         this.lastUpdated = LocalDate.now();
+    }
+
+    public ProfileImage getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(ProfileImage profileImage) {
+        this.profileImage = profileImage;
     }
 }

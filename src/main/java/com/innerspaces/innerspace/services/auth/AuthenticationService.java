@@ -2,16 +2,14 @@ package com.innerspaces.innerspace.services.auth;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import com.innerspaces.innerspace.controller.auth.AuthenticationController;
-import com.innerspaces.innerspace.entities.ForgotPassword;
+import com.innerspaces.innerspace.entities.*;
 import com.innerspaces.innerspace.exceptions.UsernameTaken;
 import com.innerspaces.innerspace.models.EmailModel;
 import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.EmailTaken;
-import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.models.auth.*;
-import com.innerspaces.innerspace.entities.Role;
-import com.innerspaces.innerspace.entities.UserProfile;
 import com.innerspaces.innerspace.repositories.auth.ForgotPasswordRepository;
+import com.innerspaces.innerspace.repositories.user.ProfileImageRepository;
 import com.innerspaces.innerspace.repositories.user.RoleRepository;
 import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
@@ -34,10 +32,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
 
@@ -62,8 +64,15 @@ public class AuthenticationService {
 
     private final UserService userService;
 
+    private ProfileImageRepository imageRepo;
+
     @Autowired
-    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService, RoleRepository roleRepo, PasswordEncoder passwordEncoder, UserRepository userRepo, UserProfileRepository profileRepo, EmailServiceImpl emailService, ForgotPasswordRepository fpRepo, Key secrectKey, TimeBasedOneTimePasswordGenerator totp, SecurityContextHolder holder, UserService userService)
+    public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService,
+                                 RoleRepository roleRepo, PasswordEncoder passwordEncoder,
+                                 UserRepository userRepo, UserProfileRepository profileRepo,
+                                 EmailServiceImpl emailService, ForgotPasswordRepository fpRepo,
+                                 Key secrectKey, TimeBasedOneTimePasswordGenerator totp,
+                                 SecurityContextHolder holder, UserService userService)
     {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
@@ -85,7 +94,7 @@ public class AuthenticationService {
        {
 
 
-           System.out.println("EMail present " + userService.emailExist(ro.getEmail()) +" " + "usernamme present "+ userService.usernameExist(ro.getUsername()));
+           System.out.println("Email present " + userService.emailExist(ro.getEmail()) +" " + "usernamme present "+ userService.usernameExist(ro.getUsername()));
            if(userService.emailExist(ro.getEmail().toLowerCase()))
            {
                throw new EmailTaken(ro.getEmail().toLowerCase());
@@ -142,19 +151,6 @@ public class AuthenticationService {
 
     }
 
-    public ApplicationUser setUserProfile(ProfileDTO dto, String username)
-    throws UsernameNotFoundException{
-        ApplicationUser user =  userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
-        UserProfile profile = profileRepo.findUserProfileByUser(user).orElse(new UserProfile());
-        profile.setBio(dto.getBio());
-        profile.setProfilePicture(dto.getProfilePicture());
-        profileRepo.save(profile);
-        user.setUserProfile(profile);
-        user.setDateOfBirth(dto.getDob());
-        userRepo.save(user);
-
-        return user;
-    }
 
     public LoginResponseDTO loginUser(String username, String password){
         logger.info("Received credentials: Username: {}, Password: {}", username, password);
@@ -302,11 +298,13 @@ public class AuthenticationService {
     }
 
 
-    public void test()
+    public String refreshToken(String refreshToken)
     {
-
-        System.out.println(holder.toString());
+       return tokenService.validateAndRefreshToken(refreshToken);
     }
+
+
+
 
 
 }

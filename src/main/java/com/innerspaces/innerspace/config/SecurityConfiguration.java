@@ -83,9 +83,12 @@ public class SecurityConfiguration   {
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(auth ->
         {
-            auth.requestMatchers("/auth/logout/**").authenticated();
             auth.requestMatchers("/auth/**").permitAll();
+            auth.requestMatchers("/profile/download/**").permitAll();
+            auth.requestMatchers("/auth/refresh/**").permitAll();
+            auth.requestMatchers("/auth/logout/**").authenticated();
             auth.anyRequest().authenticated();
+
         });
         http.oauth2ResourceServer((oauth2) -> oauth2
                 .jwt(jwt -> jwt.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter()))
