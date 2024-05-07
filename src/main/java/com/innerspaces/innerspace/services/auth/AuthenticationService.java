@@ -142,11 +142,19 @@ public class AuthenticationService {
 
     }
 
-    public ApplicationUser setUserProfile(ProfileDTO dto, String username)
-    throws UsernameNotFoundException{
-        ApplicationUser user =  userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
+    public ApplicationUser setUserProfile(ProfileDTO dto, String username) throws UsernameNotFoundException {
+        ApplicationUser user = userRepo.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("invalid user"));
         UserProfile profile = profileRepo.findUserProfileByUser(user).orElse(new UserProfile());
         profile.setBio(dto.getBio());
+
+        logger.info("Received bio: {}", dto.getBio());
+
+        if(dto.getProfilePicture() != null) {
+            logger.info("Received profile picture of size: {}", dto.getProfilePicture().length);
+        } else {
+            logger.warn("No profile picture received.");
+        }
+
         profile.setProfilePicture(dto.getProfilePicture());
         profileRepo.save(profile);
         user.setUserProfile(profile);
@@ -155,6 +163,7 @@ public class AuthenticationService {
 
         return user;
     }
+
 
     public LoginResponseDTO loginUser(String username, String password){
         logger.info("Received credentials: Username: {}, Password: {}", username, password);

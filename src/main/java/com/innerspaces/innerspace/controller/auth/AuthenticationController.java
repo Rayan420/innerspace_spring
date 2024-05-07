@@ -8,6 +8,8 @@ import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.mail.MessagingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,6 +32,7 @@ import java.sql.Date;
 @RequestMapping("/auth")
 @CrossOrigin("*")
 public class AuthenticationController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     private final AuthenticationService authService;
 
@@ -97,20 +100,24 @@ public class AuthenticationController {
 
     @RequestMapping(value = {"/register/{username}/", "/register/{username}"},
             method = RequestMethod.POST,
-    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApplicationUser CompleteUserprofileSetup(@RequestParam("profile") MultipartFile profile,
                                                     @RequestParam("bio") String bio,
                                                     @RequestParam("dob") Date dob,
                                                     @PathVariable String username) throws IOException {
+        logger.info("Received profile register request for username: {}", username);
+
         ProfileDTO dto = new ProfileDTO(dob, bio);
-        if(!profile.isEmpty())
-        {
+
+        if(!profile.isEmpty()) {
             dto.setProfilePicture(profile.getBytes());
+            logger.info("Profile picture received of size: {}", profile.getSize());
+        } else {
+            logger.warn("No profile picture received.");
         }
-        System.out.println(dto);
+
         return authService.setUserProfile(dto, username);
     }
-
 
     @RequestMapping(value = {"/login", "/login/"}, method = RequestMethod.POST, params = {})
     public LoginResponseDTO loginUser(@RequestBody LoginObject lo) {
