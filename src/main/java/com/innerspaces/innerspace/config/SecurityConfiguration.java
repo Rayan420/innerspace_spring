@@ -83,9 +83,9 @@ public class SecurityConfiguration   {
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(auth ->
         {
-            auth.requestMatchers("/auth/**").permitAll();
-            auth.requestMatchers("/profile/download/**").permitAll();
-            auth.requestMatchers("/auth/refresh/**").permitAll();
+            auth.requestMatchers("/auth/**", "/auth/refresh/**","/profile/download/**",
+                    "/v2/api-docs", "/v3/api-docs", "/v3/api-docs/**",
+                    "/swagger-ui.html", "/swagger-ui/**").permitAll();
             auth.requestMatchers("/auth/logout/**").authenticated();
             auth.anyRequest().authenticated();
 

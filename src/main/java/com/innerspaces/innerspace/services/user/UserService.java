@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 
 @Service
 public class UserService implements UserDetailsService {
@@ -72,5 +74,13 @@ public class UserService implements UserDetailsService {
     public void saveUser(ApplicationUser user)
     {
         userRepo.save(user);
+    }
+
+
+    // search for users by username, firstname, or lastname
+    public List<ApplicationUser> searchUsers(String keyword) {
+        String query = "%" + keyword + "%"; // Add '%' wildcard to search for any occurrence of the keyword
+
+        return userRepo.searchUsers(query);
     }
 }

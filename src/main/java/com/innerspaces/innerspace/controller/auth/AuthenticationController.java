@@ -10,6 +10,7 @@ import com.innerspaces.innerspace.services.auth.AuthenticationService;
 import com.innerspaces.innerspace.services.user.UserService;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,9 @@ import java.security.InvalidKeyException;
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin("*")
+@Slf4j
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Authentication Controller Endpoints", description = "The api endpoints responsible for user authentication and authorization.")
+
 public class AuthenticationController {
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 

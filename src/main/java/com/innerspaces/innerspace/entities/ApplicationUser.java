@@ -2,6 +2,7 @@ package com.innerspaces.innerspace.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 @Entity
+@Data
 @Table(name = "users")
 public class ApplicationUser implements UserDetails {
 

@@ -18,6 +18,8 @@ import java.sql.Date;
 @RequestMapping("/profile")
 @CrossOrigin("*")
 @Slf4j
+//assign doc name
+@io.swagger.v3.oas.annotations.tags.Tag(name = "Profile Controller Endpoints", description = "The api endpoints responsible for user profile management.")
 public class ProfileController {
 
     final private ProfileService profileService;
