@@ -3,6 +3,9 @@ package com.innerspaces.innerspace.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -18,11 +21,14 @@ import java.util.TimeZone;
 @Entity
 @Data
 @Table(name = "users")
+@Getter
+@Setter
 public class ApplicationUser implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "user_id")
+    @EqualsAndHashCode.Include
     private Long userId;
 
     @Column(unique = true)
@@ -49,11 +55,6 @@ public class ApplicationUser implements UserDetails {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private UserProfile userProfile;
 
-    @OneToMany(mappedBy = "sender")
-    private Set<FollowRequest> sentFollowRequests = new HashSet<>();
-
-    @OneToMany(mappedBy = "receiver")
-    private Set<FollowRequest> receivedFollowRequests = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -64,17 +65,24 @@ public class ApplicationUser implements UserDetails {
     private Set<Role> authorities;
 
     @ManyToMany
-    @JoinTable(name = "user_followers",
+    @JoinTable(
+            name = "user_followers",
             joinColumns = @JoinColumn(name = "follower_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id"))
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @JsonIgnore
     private Set<ApplicationUser> followers = new HashSet<>();
 
     @ManyToMany
-    @JoinTable(name = "user_following",
+    @JoinTable(
+            name = "user_following",
             joinColumns = @JoinColumn(name = "following_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id"))
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    @JsonIgnore
     private Set<ApplicationUser> following = new HashSet<>();
 
+    @JsonIgnore
     @OneToOne(mappedBy = "user")
     private ForgotPassword forgotpassword;
 
@@ -102,7 +110,7 @@ public class ApplicationUser implements UserDetails {
         this.isAccountNonLocked = true;
     }
 
-    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, LocalDate dateJoined, String lastLogin, UserProfile userProfile, Set<FollowRequest> sentFollowRequests, Set<FollowRequest> receivedFollowRequests, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
+    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, LocalDate dateJoined, String lastLogin, UserProfile userProfile, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
         super();
         this.isCredentialsNonExpired = true;
         this.isEnabled = false;
@@ -118,124 +126,11 @@ public class ApplicationUser implements UserDetails {
         this.dateJoined = dateJoined;
         this.lastLogin = lastLogin;
         this.userProfile = userProfile;
-        this.sentFollowRequests = sentFollowRequests;
-        this.receivedFollowRequests = receivedFollowRequests;
         this.authorities = authorities;
         this.followers = followers;
         this.following = following;
     }
 // Getters and setters for all fields
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.authorities;
-    }
-
-    @Override
-    public String getPassword() {
-        return this.password;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return this.isAccountNonExpired;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return this.isAccountNonLocked;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return this.isCredentialsNonExpired;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return this.isEnabled;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public Date getDateOfBirth() {
-        return dateOfBirth;
-    }
-
-    public LocalDate getDateJoined() {
-        return dateJoined;
-    }
-
-    public String getLastLogin() {
-        return lastLogin;
-    }
-
-    public UserProfile getUserProfile() {
-        return userProfile;
-    }
-
-    public Set<FollowRequest> getSentFollowRequests() {
-        return sentFollowRequests;
-    }
-
-    public Set<FollowRequest> getReceivedFollowRequests() {
-        return receivedFollowRequests;
-    }
-
-    public Set<ApplicationUser> getFollowers() {
-        return followers;
-    }
-
-    public Set<ApplicationUser> getFollowing() {
-        return following;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public void setDateOfBirth(Date dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
 
 
@@ -248,40 +143,18 @@ public class ApplicationUser implements UserDetails {
         this.lastLogin = formattedDate;
     }
 
-    public void setUserProfile(UserProfile userProfile) {
-        this.userProfile = userProfile;
+
+
+    @Override
+    public int hashCode() {
+        return userId != null ? userId.hashCode() : 0;
     }
 
-    public void setSentFollowRequests(Set<FollowRequest> sentFollowRequests) {
-        this.sentFollowRequests = sentFollowRequests;
-    }
-
-    public void setReceivedFollowRequests(Set<FollowRequest> receivedFollowRequests) {
-        this.receivedFollowRequests = receivedFollowRequests;
-    }
-
-    public void setAuthorities(Set<Role> authorities) {
-        this.authorities = authorities;
-    }
-
-    public void setFollowers(Set<ApplicationUser> followers) {
-        this.followers = followers;
-    }
-
-    public void setFollowing(Set<ApplicationUser> following) {
-        this.following = following;
-    }
-
-    public String getName()
-    {
-        return this.firstName + " " + this.lastName;
-    }
-
-    public String getRefreshId() {
-        return refreshId;
-    }
-
-    public void setRefreshId(String refreshId) {
-        this.refreshId = refreshId;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ApplicationUser that = (ApplicationUser) obj;
+        return userId != null && userId.equals(that.userId);
     }
 }

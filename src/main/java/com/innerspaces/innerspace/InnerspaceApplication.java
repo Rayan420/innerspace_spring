@@ -30,47 +30,47 @@ public class InnerspaceApplication {
             role.setAuthority("USER");
             roleRepository.save(role);
 
-            // Sample usernames
-            String[] usernames = {"john_doe", "sarah_smith", "mike_jones", "emily_brown", "alex_williams", "chris_taylor"};
-
-            // Create 50 users
-            for (int i = 0; i < 50; i++) {
-                ApplicationUser user = new ApplicationUser();
-                int index = i % usernames.length; // Index for selecting usernames cyclically
-                user.setUsername(usernames[index] + i); // Append index for uniqueness
-                user.setEmail("user" + i + "@example.com");
-                user.setFirstName("First" + i);
-                user.setLastName("Last" + i);
-                user.setDateOfBirth(Date.valueOf(LocalDate.now().minusYears(20 + i)));
-                user.setPassword("password" + i);
-                user.setLastLogin(); // Set last login timestamp
-
-                // Set default roles
-                Set<Role> roles = new HashSet<>();
-                roles.add(role);
-                user.setAuthorities(roles);
-
-                userRepository.save(user);
-            }
-
-            // Create some users with duplicate first and last names
-            for (int i = 0; i < 10; i++) {
-                ApplicationUser user = new ApplicationUser();
-                user.setUsername("user_duplicate" + i);
-                user.setEmail("user_duplicate" + i + "@example.com");
-                user.setFirstName("Duplicate");
-                user.setLastName("User");
-                user.setDateOfBirth(Date.valueOf(LocalDate.now().minusYears(20 + i)));
-                user.setPassword("password_duplicate" + i);
-                user.setLastLogin(); // Set last login timestamp
-
-                // Set default roles
-                Set<Role> roles = new HashSet<>();
-                roles.add(role);
-                user.setAuthorities(roles);
-
-                userRepository.save(user);
-            }
+//            // Sample usernames
+//            String[] usernames = {"john_doe", "sarah_smith", "mike_jones", "emily_brown", "alex_williams", "chris_taylor"};
+//
+//            // Create 50 users
+//            for (int i = 0; i < 50; i++) {
+//                ApplicationUser user = new ApplicationUser();
+//                int index = i % usernames.length; // Index for selecting usernames cyclically
+//                user.setUsername(usernames[index] + i); // Append index for uniqueness
+//                user.setEmail("user" + i + "@example.com");
+//                user.setFirstName("First" + i);
+//                user.setLastName("Last" + i);
+//                user.setDateOfBirth(Date.valueOf(LocalDate.now().minusYears(20 + i)));
+//                user.setPassword("password" + i);
+//                user.setLastLogin(); // Set last login timestamp
+//
+//                // Set default roles
+//                Set<Role> roles = new HashSet<>();
+//                roles.add(role);
+//                user.setAuthorities(roles);
+//
+//                userRepository.save(user);
+//            }
+//
+//            // Create some users with duplicate first and last names
+//            for (int i = 0; i < 10; i++) {
+//                ApplicationUser user = new ApplicationUser();
+//                user.setUsername("user_duplicate" + i);
+//                user.setEmail("user_duplicate" + i + "@example.com");
+//                user.setFirstName("Duplicate");
+//                user.setLastName("User");
+//                user.setDateOfBirth(Date.valueOf(LocalDate.now().minusYears(20 + i)));
+//                user.setPassword("password_duplicate" + i);
+//                user.setLastLogin(); // Set last login timestamp
+//
+//                // Set default roles
+//                Set<Role> roles = new HashSet<>();
+//                roles.add(role);
+//                user.setAuthorities(roles);
+//
+//                userRepository.save(user);
+//            }
         };
     }
 

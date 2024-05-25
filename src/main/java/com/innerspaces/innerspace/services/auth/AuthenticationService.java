@@ -89,7 +89,7 @@ public class AuthenticationService {
     }
 
 
-    public void registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
+    public ApplicationUser registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
        try
        {
 
@@ -140,6 +140,7 @@ public class AuthenticationService {
 
 
                emailService.sendRegistrationEmail(model, context );
+                return user;
            }
 
        }
