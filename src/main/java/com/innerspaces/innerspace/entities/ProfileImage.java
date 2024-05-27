@@ -1,11 +1,13 @@
 package com.innerspaces.innerspace.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 @Entity
 @NoArgsConstructor
@@ -22,6 +24,7 @@ public class ProfileImage {
     private String fileName;
     private String fileType;
 
+    @JsonIgnore
     @Lob
     private byte[] profile_image;
 
@@ -68,6 +71,7 @@ public class ProfileImage {
         this.profile_image = profile_image;
     }
 
+    @JsonBackReference
     public UserProfile getProfile() {
         return profile;
     }

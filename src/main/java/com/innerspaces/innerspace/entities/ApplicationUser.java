@@ -1,19 +1,19 @@
 package com.innerspaces.innerspace.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
@@ -53,6 +53,7 @@ public class ApplicationUser implements UserDetails {
     private String lastLogin;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private UserProfile userProfile;
 
 
@@ -70,7 +71,7 @@ public class ApplicationUser implements UserDetails {
             joinColumns = @JoinColumn(name = "follower_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnore
+    @JsonIgnoreProperties({"followers", "following"}) // Ignore serialization of followers and following
     private Set<ApplicationUser> followers = new HashSet<>();
 
     @ManyToMany
@@ -79,7 +80,7 @@ public class ApplicationUser implements UserDetails {
             joinColumns = @JoinColumn(name = "following_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnore
+    @JsonIgnoreProperties({"followers", "following"}) // Ignore serialization of followers and following
     private Set<ApplicationUser> following = new HashSet<>();
 
     @JsonIgnore
@@ -157,4 +158,15 @@ public class ApplicationUser implements UserDetails {
         ApplicationUser that = (ApplicationUser) obj;
         return userId != null && userId.equals(that.userId);
     }
+    @Override
+    public String toString() {
+        return "ApplicationUser{" +
+                "userId=" + userId +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                // Include other fields as needed
+                '}';
+    }
+
+
 }

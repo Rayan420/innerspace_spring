@@ -14,11 +14,11 @@ import com.innerspaces.innerspace.repositories.user.RoleRepository;
 import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
 import com.innerspaces.innerspace.services.EmailServiceImpl;
+import com.innerspaces.innerspace.services.user.NotificationsService;
 import com.innerspaces.innerspace.services.user.UserService;
 import com.innerspaces.innerspace.utils.UsernameRecomAlgo;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,6 @@ import java.time.Instant;
 import java.util.*;
 
 @Service
-@Transactional
 public class AuthenticationService {
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
@@ -66,13 +65,15 @@ public class AuthenticationService {
 
     private ProfileImageRepository imageRepo;
 
+    private final NotificationsService notificationsService;
+
     @Autowired
     public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService,
                                  RoleRepository roleRepo, PasswordEncoder passwordEncoder,
                                  UserRepository userRepo, UserProfileRepository profileRepo,
                                  EmailServiceImpl emailService, ForgotPasswordRepository fpRepo,
                                  Key secrectKey, TimeBasedOneTimePasswordGenerator totp,
-                                 SecurityContextHolder holder, UserService userService)
+                                 SecurityContextHolder holder, UserService userService, NotificationsService notificationsService)
     {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
@@ -86,6 +87,7 @@ public class AuthenticationService {
         this.totp = totp;
         this.holder = holder;
         this.userService = userService;
+        this.notificationsService = notificationsService;
     }
 
 
@@ -179,21 +181,21 @@ public class AuthenticationService {
                     user.setLastLogin();
 
                     // Return LoginResponseDTO with user and token
-                    return new LoginResponseDTO(user, tokens);
+                    return new LoginResponseDTO(user, tokens, user.getFollowing(), user.getFollowers());
                 } else {
                     logger.error("User {} not found in the repository", username);
                     // Handle case where user is not found
-                    return new LoginResponseDTO(null, null);
+                    return new LoginResponseDTO(null, null, null, null);
                 }
             } else {
                 // Handle case where authentication failed
                 logger.error("Authentication failed for user {}", username);
-                return new LoginResponseDTO(null, null);
+                return new LoginResponseDTO(null, null, null, null);
             }
         } catch(AuthenticationException e){
             // Handle authentication exception
             logger.error("Authentication exception for user {}: {}", username, e.getMessage());
-            return new LoginResponseDTO(null, null);
+            return new LoginResponseDTO(null, null, null, null);
         }
     }
 
@@ -202,6 +204,11 @@ public class AuthenticationService {
 
         ApplicationUser user = userService.getUserByUsername(username);
         user.setRefreshId(null);
+        userRepo.save(user);
+        if(notificationsService.isUserSubscribed(user.getUserId()))
+        {
+            notificationsService.unsubscribe(user.getUserId());
+        }
         MessageDTO dto = new MessageDTO("Logout successful");
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }

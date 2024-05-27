@@ -1,9 +1,7 @@
 package com.innerspaces.innerspace.services.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
-import com.innerspaces.innerspace.entities.NotificationType;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,7 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 
 @Service

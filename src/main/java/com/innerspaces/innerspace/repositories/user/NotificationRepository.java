@@ -15,5 +15,8 @@ public interface NotificationRepository extends JpaRepository<Notifications, Lon
     // find all by owner id
     List<Notifications> findAllByOwnerId(Long ownerId);
 
+    List<Notifications> findTop10ByOwnerIdOrderByCreatedAtDesc(Long ownerId);
+
+
 
 }

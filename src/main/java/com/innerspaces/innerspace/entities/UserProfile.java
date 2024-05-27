@@ -1,7 +1,9 @@
 package com.innerspaces.innerspace.entities;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+
 import java.time.LocalDate;
 
 @Entity
@@ -21,6 +23,7 @@ public class UserProfile {
     @JoinColumn(name = "user_id")
     private ApplicationUser user;
 
+    @Basic(fetch = FetchType.LAZY)
     @Column(name = "profile_picture")
     private String profileImageUrl;
 
@@ -140,6 +143,7 @@ public class UserProfile {
         this.followedSpaceCount = followedSpaceCount;
     }
 
+    @JsonBackReference
     public ApplicationUser getUser() {
         return user;
     }
@@ -152,6 +156,7 @@ public class UserProfile {
         this.lastUpdated = LocalDate.now();
     }
 
+    @JsonManagedReference
     public ProfileImage getProfileImage() {
         return profileImage;
     }
