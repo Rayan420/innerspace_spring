@@ -49,6 +49,8 @@ public class FollowService {
             receiver.getUserProfile().setFollowerCount(receiver.getUserProfile().getFollowerCount() - 1);
             userRepo.save(sender);
             userRepo.save(receiver);
+            System.out.println(receiverId);
+            System.out.println(senderId);
 
             // Log unfollow action
             log.info("User " + sender.getUsername() + " unfollowed " + receiver.getUsername());

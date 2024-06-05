@@ -80,7 +80,8 @@ public class NotificationsService {
     public void createNotification(Long userId, String type, Long senderId) {
         try {
             ApplicationUser sender = userRepository.findById(senderId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            Notifications notification = buildNotification(type, sender);
+            ApplicationUser receiver = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            Notifications notification = buildNotification(type, sender, receiver);
 
             notification.setOwnerId(userId);
             notification.setSenderName(sender.getFirstName() + " " + sender.getLastName());
@@ -95,14 +96,14 @@ public class NotificationsService {
         }
     }
 
-    private Notifications buildNotification(String type, ApplicationUser sender) {
+    private Notifications buildNotification(String type, ApplicationUser sender, ApplicationUser receiver){
         switch (type) {
             case "FOLLOW":
                 FollowNotification followNotification = new FollowNotification();
                 followNotification.setMessage(sender.getUsername() + " started following you");
                 followNotification.setSenderBio(sender.getUserProfile().getBio());
-                followNotification.setFollowerCount(sender.getUserProfile().getFollowerCount());
-                followNotification.setFollowingCount(sender.getUserProfile().getFollowingCount());
+                followNotification.setFollowerCount(receiver.getUserProfile().getFollowerCount());
+                followNotification.setFollowingCount(receiver.getUserProfile().getFollowingCount());
                 followNotification.setNotificationType("FOLLOW");
                 return followNotification;
             case "LIKE":
