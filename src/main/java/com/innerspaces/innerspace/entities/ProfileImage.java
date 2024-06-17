@@ -18,10 +18,13 @@ public class ProfileImage {
     @Id
     @GeneratedValue(generator = "uuid")
     @GenericGenerator(name = "uuid", strategy = "uuid2")
-    @Column(name = "profile_image_id")
+    @JsonIgnore
     private String id;
 
+    @JsonIgnore
     private String fileName;
+    @JsonIgnore
+
     private String fileType;
 
     @JsonIgnore
@@ -30,7 +33,6 @@ public class ProfileImage {
 
     @JsonIgnore
     @OneToOne
-    @JoinColumn(name = "profile_id")
     private UserProfile profile;
 
     public ProfileImage(String fileName, String fileType, byte[] profile_image) {

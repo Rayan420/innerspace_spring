@@ -1,6 +1,7 @@
 package com.innerspaces.innerspace.services.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +88,8 @@ public class UserService implements UserDetailsService {
     }
 
 
-
+    public LoginResponseDTO loadUser(long userId) {
+        ApplicationUser user = userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return new LoginResponseDTO(user, null, user.getFollowing(), user.getFollowers());
+    }
 }

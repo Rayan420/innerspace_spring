@@ -1,6 +1,7 @@
 package com.innerspaces.innerspace.controller.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
 import com.innerspaces.innerspace.services.user.FollowService;
 import com.innerspaces.innerspace.services.user.ProfileService;
 import com.innerspaces.innerspace.services.user.UserService;
@@ -38,6 +39,13 @@ public class UserController {
 
     // search endpoint
 
+    @RequestMapping(value = {"/load/{userId}", "/load/{userId}/"},
+            method = RequestMethod.GET
+    )
+    public LoginResponseDTO loadUser(@PathVariable long userId)
+    {
+        return userService.loadUser(userId);
+    }
     @RequestMapping(value = {"/search/{keyword}", "/search/{keyword}/"},
     produces = "application/json", method = RequestMethod.GET)
     public List<ApplicationUser> searchUsers(@PathVariable String keyword)
@@ -46,11 +54,8 @@ public class UserController {
     }
 
     // follow user
-    @RequestMapping(value = {"/follow/{senderId}/{receiverId}", "/follow/{senderId}/{receiverId}/"}
-    ,method = RequestMethod.POST)
-    public ResponseEntity<?> followUser(@PathVariable Long senderId, @PathVariable Long receiverId)
-    {
-
+    @PostMapping("/follow/{senderId}/{receiverId}")
+    public ResponseEntity<?> followUser(@PathVariable Long senderId, @PathVariable Long receiverId) {
         return followService.followOrUnfollowUser(senderId, receiverId);
     }
 

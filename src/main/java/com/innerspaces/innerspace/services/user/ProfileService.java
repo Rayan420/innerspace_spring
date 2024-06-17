@@ -3,6 +3,7 @@ package com.innerspaces.innerspace.services.user;
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.entities.ProfileImage;
 import com.innerspaces.innerspace.entities.UserProfile;
+import com.innerspaces.innerspace.models.user.UserDto;
 import com.innerspaces.innerspace.repositories.user.ProfileImageRepository;
 import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
@@ -74,5 +75,23 @@ public class ProfileService {
         return imageRepo
                 .findById(fileId)
                 .orElseThrow(() -> new Exception("File not found with Id: " + fileId));
+    }
+
+    public UserDto getUserProfile(long userId) {
+        ApplicationUser user = userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("No user found with id: " + userId));
+        UserDto userDto = new UserDto();
+        userDto.setUserId(user.getUserId());
+        userDto.setUsername(user.getUsername());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
+        userDto.setBio(user.getUserProfile().getBio());
+        userDto.setDob(user.getDateOfBirth());
+        userDto.setJoinDate(user.getDateJoined());
+        userDto.setProfileImageUrl(user.getUserProfile().getProfileImageUrl());
+        userDto.setPrivate(user.getUserProfile().isPrivate());
+        userDto.setFollowerCount(user.getUserProfile().getFollowerCount());
+        userDto.setFollowingCount(user.getUserProfile().getFollowingCount());
+        userDto.setOwnedSpaceCount(user.getUserProfile().getOwnedSpaceCount());
+        return userDto;
     }
 }

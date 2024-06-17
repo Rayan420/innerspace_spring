@@ -49,7 +49,7 @@ public class ApplicationUser implements UserDetails {
     @JsonIgnore
     private String password;
 
-    private LocalDate dateJoined = LocalDate.now();
+    private Date dateJoined = Date.valueOf(LocalDate.now());
     private String lastLogin;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -111,7 +111,7 @@ public class ApplicationUser implements UserDetails {
         this.isAccountNonLocked = true;
     }
 
-    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, LocalDate dateJoined, String lastLogin, UserProfile userProfile, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
+    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, Date dateJoined, String lastLogin, UserProfile userProfile, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
         super();
         this.isCredentialsNonExpired = true;
         this.isEnabled = false;

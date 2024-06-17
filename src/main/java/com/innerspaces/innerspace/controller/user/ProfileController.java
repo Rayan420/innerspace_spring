@@ -2,6 +2,7 @@ package com.innerspaces.innerspace.controller.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.entities.ProfileImage;
+import com.innerspaces.innerspace.models.user.UserDto;
 import com.innerspaces.innerspace.services.user.ProfileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -27,6 +28,24 @@ public class ProfileController {
     public ProfileController(ProfileService profileService) {
         this.profileService = profileService;
     }
+
+
+
+    @RequestMapping(value = {""},
+            method = RequestMethod.GET
+            )
+public UserDto getUserProfile(@RequestParam("user")long userId) {
+        return profileService.getUserProfile(userId);
+    }
+
+
+
+
+
+
+
+
+
 
 
     @RequestMapping(value = {"/register/{username}/", "/register/{username}"},

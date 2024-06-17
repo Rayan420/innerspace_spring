@@ -12,8 +12,8 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-
 public class FollowService {
+
     private final NotificationsService notificationsService;
     private final UserRepository userRepo;
 
@@ -49,8 +49,6 @@ public class FollowService {
             receiver.getUserProfile().setFollowerCount(receiver.getUserProfile().getFollowerCount() - 1);
             userRepo.save(sender);
             userRepo.save(receiver);
-            System.out.println(receiverId);
-            System.out.println(senderId);
 
             // Log unfollow action
             log.info("User " + sender.getUsername() + " unfollowed " + receiver.getUsername());
@@ -65,11 +63,7 @@ public class FollowService {
             userRepo.save(receiver);
 
             // Create and send follow notification
-            notificationsService.createNotification(
-                    receiverId,
-                    "FOLLOW",
-                    senderId
-            );
+            notificationsService.createNotification(receiverId, "FOLLOW", senderId);
 
             // Log follow action
             log.info("User " + sender.getUsername() + " followed " + receiver.getUsername());
@@ -77,6 +71,4 @@ public class FollowService {
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
-
 }
-

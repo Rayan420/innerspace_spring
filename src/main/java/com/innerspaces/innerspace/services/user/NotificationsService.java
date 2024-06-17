@@ -3,16 +3,19 @@ package com.innerspaces.innerspace.services.user;
 import com.innerspaces.innerspace.entities.*;
 import com.innerspaces.innerspace.repositories.user.NotificationRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
+import com.innerspaces.innerspace.utils.SseEmitterUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -20,57 +23,37 @@ public class NotificationsService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
-
-    public boolean isUserSubscribed(Long userId) {
-        return emitters.containsKey(userId);
-    }
+    private final Map<Long, Sinks.Many<Notifications>> sinks = new ConcurrentHashMap<>();
 
     public NotificationsService(NotificationRepository notificationRepository, UserRepository userRepository) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
     }
 
+    public boolean isUserSubscribed(Long userId) {
+        return sinks.containsKey(userId);
+    }
+
     public SseEmitter subscribe(Long userId) {
-        SseEmitter emitter = new SseEmitter(TimeUnit.HOURS.toMillis(1));
-        emitter.onCompletion(() -> {
-            emitters.remove(userId);
-            log.info("User {} unsubscribed from notifications", userId);
-            log.info("size of emitters: " + emitters.size());
-
-        });
-        emitter.onTimeout(() -> {
-            emitters.remove(userId);
-            log.info("User {} timed out", userId);
-            log.info("size of emitters: " + emitters.size());
-
-        });
-        emitter.onError((e) -> {
-            emitters.remove(userId);
-            log.error("Error occurred for user {}", userId, e);
-            log.info("size of emitters: " + emitters.size());
-
-        });
-        emitters.put(userId, emitter);
+        Sinks.Many<Notifications> sink = Sinks.many().multicast().onBackpressureBuffer();
+        sinks.put(userId, sink);
         log.info("User {} subscribed to notifications", userId);
-        System.out.println("User {} subscribed to notifications" + userId);
-        log.info("size of emitters: " + emitters.size());
-        sendInitEvent(emitter, userId);
 
-        return emitter;
+        Flux<Notifications> notificationFlux = sink.asFlux()
+                .doOnSubscribe(subscription -> sendInitEvent(sink, userId));
+
+        return SseEmitterUtils.fromFlux(notificationFlux, -1L);
     }
 
-    // unsubscribe method
     public void unsubscribe(Long userId) {
-        emitters.remove(userId);
+        sinks.remove(userId);
         log.info("User {} unsubscribed from notifications", userId);
-        log.info("size of emitters: " + emitters.size());
     }
 
-    private void sendInitEvent(SseEmitter emitter, Long userId) {
+    private void sendInitEvent(Sinks.Many<Notifications> sink, Long userId) {
         try {
             List<Notifications> recentNotifications = notificationRepository.findTop10ByOwnerIdOrderByCreatedAtDesc(userId);
-            emitter.send(recentNotifications);
+            recentNotifications.forEach(sink::tryEmitNext);
         } catch (Exception e) {
             log.error("Error sending init event", e);
         }
@@ -96,7 +79,7 @@ public class NotificationsService {
         }
     }
 
-    private Notifications buildNotification(String type, ApplicationUser sender, ApplicationUser receiver){
+    private Notifications buildNotification(String type, ApplicationUser sender, ApplicationUser receiver) {
         switch (type) {
             case "FOLLOW":
                 FollowNotification followNotification = new FollowNotification();
@@ -118,14 +101,9 @@ public class NotificationsService {
 
     @Async
     public void sendNotification(Notifications notification, Long userId) {
-        SseEmitter emitter = emitters.get(userId);
-        if (emitter != null) {
-            try {
-                emitter.send(notification);
-            } catch (Exception e) {
-                emitters.remove(userId);
-                log.error("Error sending notification", e);
-            }
+        Sinks.Many<Notifications> sink = sinks.get(userId);
+        if (sink != null) {
+            sink.tryEmitNext(notification);
         }
     }
 }
