@@ -86,9 +86,15 @@ public class NotificationsService {
                 followNotification.setMessage(sender.getUsername() + " started following you");
                 followNotification.setSenderBio(sender.getUserProfile().getBio());
                 followNotification.setFollowerCount(receiver.getUserProfile().getFollowerCount());
-                followNotification.setFollowingCount(receiver.getUserProfile().getFollowingCount());
                 followNotification.setNotificationType("FOLLOW");
                 return followNotification;
+            case "UNFOLLOW":
+                UnFollowNotification unfollowNotification = new UnFollowNotification();
+                unfollowNotification.setMessage(sender.getUsername() + " started following you");
+                unfollowNotification.setSenderBio(sender.getUserProfile().getBio());
+                unfollowNotification.setFollowerCount(receiver.getUserProfile().getFollowerCount());
+                unfollowNotification.setNotificationType("UNFOLLOW");
+                return unfollowNotification;
             case "LIKE":
                 LikeNotification likeNotification = new LikeNotification();
                 likeNotification.setMessage(sender.getUsername() + " liked your post");

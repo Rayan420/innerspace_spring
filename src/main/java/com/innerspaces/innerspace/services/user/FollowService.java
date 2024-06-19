@@ -40,6 +40,8 @@ public class FollowService {
             return new ResponseEntity<>("You cannot follow/unfollow yourself", HttpStatus.BAD_REQUEST);
         }
 
+        String action;
+
         // Check if the sender is already following the receiver
         if (sender.getFollowing().contains(receiver)) {
             // Unfollow the user
@@ -52,6 +54,9 @@ public class FollowService {
 
             // Log unfollow action
             log.info("User " + sender.getUsername() + " unfollowed " + receiver.getUsername());
+            action = "unfollowed";
+            notificationsService.createNotification(receiverId, "UNFOLLOW", senderId);
+            return new ResponseEntity<>(action, HttpStatus.OK);
         } else {
             // Follow the user
             sender.getFollowing().add(receiver);
@@ -67,8 +72,11 @@ public class FollowService {
 
             // Log follow action
             log.info("User " + sender.getUsername() + " followed " + receiver.getUsername());
+            action = "followed";
+            return new ResponseEntity<>(action, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(HttpStatus.OK);
+
     }
+
 }

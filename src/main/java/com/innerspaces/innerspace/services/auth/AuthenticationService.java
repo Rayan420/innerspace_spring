@@ -42,6 +42,7 @@ import java.security.Key;
 import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthenticationService {
@@ -155,48 +156,53 @@ public class AuthenticationService {
     }
 
 
-    public LoginResponseDTO loginUser(String username, String password){
+    public LoginResponseDTO loginUser(String username, String password) {
         logger.info("Received credentials: Username: {}, Password: {}", username, password);
 
-        try{
+        try {
             // Authenticate the user
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username.toLowerCase(), password)
             );
 
-            // Check if authentication was successful
             if (auth.isAuthenticated()) {
                 logger.info("User {} authenticated successfully", username);
 
                 // Generate JWT token
                 Map<String, String> tokens = tokenService.generateJwt(auth);
 
-                // Retrieve user from repository
                 Optional<ApplicationUser> optionalUser = userRepo.findByUsername(username.toLowerCase());
                 if (optionalUser.isPresent()) {
                     ApplicationUser user = optionalUser.get();
-
-                    // Log the user details
                     logger.info("User details retrieved: {}", user);
                     user.setLastLogin();
 
-                    // Return LoginResponseDTO with user and token
-                    return new LoginResponseDTO(user, tokens, user.getFollowing(), user.getFollowers());
+                    // Convert following and followers to LightweightUserDTO
+                    Set<LightweightUserDTO> following = user.getFollowing().stream()
+                            .map(this::convertToLightweightUserDTO)
+                            .collect(Collectors.toSet());
+
+                    Set<LightweightUserDTO> followers = user.getFollowers().stream()
+                            .map(this::convertToLightweightUserDTO)
+                            .collect(Collectors.toSet());
+
+                    return new LoginResponseDTO(user, tokens, following, followers);
                 } else {
                     logger.error("User {} not found in the repository", username);
-                    // Handle case where user is not found
                     return new LoginResponseDTO(null, null, null, null);
                 }
             } else {
-                // Handle case where authentication failed
                 logger.error("Authentication failed for user {}", username);
                 return new LoginResponseDTO(null, null, null, null);
             }
-        } catch(AuthenticationException e){
-            // Handle authentication exception
+        } catch (AuthenticationException e) {
             logger.error("Authentication exception for user {}: {}", username, e.getMessage());
             return new LoginResponseDTO(null, null, null, null);
         }
+    }
+
+    private LightweightUserDTO convertToLightweightUserDTO(ApplicationUser user) {
+        return new LightweightUserDTO(user.getUserId(), user.getUsername(), user.getFirstName(), user.getLastName());
     }
 
 

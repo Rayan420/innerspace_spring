@@ -1,6 +1,5 @@
 package com.innerspaces.innerspace.entities;
 
-
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
@@ -8,17 +7,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@DiscriminatorValue("FOLLOW")
+@DiscriminatorValue("UNFOLLOW")
 @AllArgsConstructor
 @Getter
 @Setter
-public class FollowNotification extends Notifications {
+public class UnFollowNotification extends Notifications {
     private int followerCount;
     private String notificationType;
     private String senderBio;
 
-    public FollowNotification() {
+    public UnFollowNotification() {
         super();
     }
 }
-
