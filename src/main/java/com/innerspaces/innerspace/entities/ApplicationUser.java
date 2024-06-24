@@ -65,23 +65,15 @@ public class ApplicationUser implements UserDetails {
     )
     private Set<Role> authorities;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_followers",
-            joinColumns = @JoinColumn(name = "follower_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @JsonIgnoreProperties({"followers", "following"}) // Ignore serialization of followers and following
-    private Set<ApplicationUser> followers = new HashSet<>();
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("user")
+    @JsonIgnore
+    private Set<UserFollower> followers = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_following",
-            joinColumns = @JoinColumn(name = "following_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    @JsonIgnoreProperties({"followers", "following"}) // Ignore serialization of followers and following
-    private Set<ApplicationUser> following = new HashSet<>();
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("user")
+    @JsonIgnore
+    private Set<UserFollowing> following = new HashSet<>();
 
     @JsonIgnore
     @OneToOne(mappedBy = "user")
@@ -111,7 +103,7 @@ public class ApplicationUser implements UserDetails {
         this.isAccountNonLocked = true;
     }
 
-    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, Date dateJoined, String lastLogin, UserProfile userProfile, Set<Role> authorities, Set<ApplicationUser> followers, Set<ApplicationUser> following) {
+    public ApplicationUser(Long userId, String username, String email, String firstName, String lastName, Date dateOfBirth, String password, Date dateJoined, String lastLogin, UserProfile userProfile, Set<Role> authorities, Set<UserFollower> followers, Set<UserFollowing> following) {
         super();
         this.isCredentialsNonExpired = true;
         this.isEnabled = false;

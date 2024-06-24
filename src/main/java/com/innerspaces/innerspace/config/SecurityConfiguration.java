@@ -81,6 +81,7 @@ public class SecurityConfiguration   {
     public SecurityFilterChain filterChain(HttpSecurity http)
             throws Exception{
         http.csrf(AbstractHttpConfigurer::disable);
+        http.cors(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(auth ->
         {
             auth.requestMatchers("/auth/**", "/auth/refresh/**","/profile/download/**",
@@ -94,7 +95,10 @@ public class SecurityConfiguration   {
                 .jwt(jwt -> jwt.decoder(jwtDecoder()).jwtAuthenticationConverter(jwtAuthenticationConverter()))
         );
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
+        http.exceptionHandling(ex -> {
+            ex.authenticationEntryPoint((request, response, authException) -> response.sendError(401, "Unauthorized"));
+            ex.accessDeniedHandler((request, response, authException) -> response.sendError(403, "Forbidden"));
+        });
         return http.build();
     }
 

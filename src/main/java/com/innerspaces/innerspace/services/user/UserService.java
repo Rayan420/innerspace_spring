@@ -1,6 +1,8 @@
 package com.innerspaces.innerspace.services.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.entities.UserFollower;
+import com.innerspaces.innerspace.entities.UserFollowing;
 import com.innerspaces.innerspace.models.auth.LightweightUserDTO;
 import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
@@ -33,6 +35,10 @@ public class UserService implements UserDetailsService {
             throw new UsernameNotFoundException("User not found");
         }
         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), user.getAuthorities());
+    }
+    // get user by id
+    public ApplicationUser getUserById(long userId) {
+        return userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
     public ApplicationUser getUserByRefreshId(String refreshId) {
@@ -77,15 +83,19 @@ public class UserService implements UserDetailsService {
         ApplicationUser user = userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         // Convert following and followers to LightweightUserDTO
-        Set<LightweightUserDTO> following = user.getFollowing().stream()
+
+
+        Set<LightweightUserDTO> followingDTO = user.getFollowing().stream()
+                .map(UserFollowing::getFollowing)
                 .map(this::convertToLightweightUserDTO)
                 .collect(Collectors.toSet());
 
-        Set<LightweightUserDTO> followers = user.getFollowers().stream()
+        Set<LightweightUserDTO> followersDTO = user.getFollowers().stream()
+                .map(UserFollower::getFollower)
                 .map(this::convertToLightweightUserDTO)
                 .collect(Collectors.toSet());
 
-        return new LoginResponseDTO(user, null, following, followers);
+        return new LoginResponseDTO(user, null, followingDTO, followersDTO);
     }
 
     private LightweightUserDTO convertToLightweightUserDTO(ApplicationUser user) {

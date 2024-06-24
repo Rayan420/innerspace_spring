@@ -1,9 +1,13 @@
 package com.innerspaces.innerspace.models.user;
 
 import com.innerspaces.innerspace.entities.Notifications;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.sql.Date;
 import java.time.Instant;
+
+@Getter
+@Setter
 
 public class NotificationResponse {
     private Notifications notification;
@@ -16,19 +20,9 @@ public class NotificationResponse {
         this.type = type;
     }
 
-    public Notifications getNotification() {
-        return notification;
+// from notification
+    public static NotificationResponse fromNotification(Notifications notification, String type) {
+        return new NotificationResponse(notification, type);
     }
 
-    public void setNotification(Notifications notification) {
-        this.notification = notification;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
 }

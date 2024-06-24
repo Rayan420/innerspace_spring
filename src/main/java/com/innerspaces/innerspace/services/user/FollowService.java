@@ -1,8 +1,13 @@
 package com.innerspaces.innerspace.services.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.entities.UserFollower;
+import com.innerspaces.innerspace.entities.UserFollowing;
+import com.innerspaces.innerspace.repositories.user.UserFollowerRepository;
+import com.innerspaces.innerspace.repositories.user.UserFollowingRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,10 +21,17 @@ public class FollowService {
 
     private final NotificationsService notificationsService;
     private final UserRepository userRepo;
+    private final UserFollowerRepository userFollowerRepository;
 
-    public FollowService(NotificationsService notificationsService, UserRepository userRepo) {
+    private final UserFollowingRepository userFollowingRepository;
+
+
+    @Autowired
+    public FollowService(NotificationsService notificationsService, UserRepository userRepo, UserFollowerRepository userFollowerRepository, UserFollowingRepository userFollowingRepository) {
         this.notificationsService = notificationsService;
         this.userRepo = userRepo;
+        this.userFollowerRepository = userFollowerRepository;
+        this.userFollowingRepository = userFollowingRepository;
     }
 
     public ResponseEntity<?> followOrUnfollowUser(Long senderId, Long receiverId) {
@@ -43,12 +55,15 @@ public class FollowService {
         String action;
 
         // Check if the sender is already following the receiver
-        if (sender.getFollowing().contains(receiver)) {
+        Optional<UserFollowing> existingFollowing = userFollowingRepository.findByUserAndFollowing(sender, receiver);
+        if (existingFollowing.isPresent()) {
             // Unfollow the user
-            sender.getFollowing().remove(receiver);
-            receiver.getFollowers().remove(sender);
+            userFollowingRepository.delete(existingFollowing.get());
+            Optional<UserFollower> existingFollower = userFollowerRepository.findByUserAndFollower(receiver, sender);
+            existingFollower.ifPresent(userFollowerRepository::delete);
             sender.getUserProfile().setFollowingCount(sender.getUserProfile().getFollowingCount() - 1);
             receiver.getUserProfile().setFollowerCount(receiver.getUserProfile().getFollowerCount() - 1);
+
             userRepo.save(sender);
             userRepo.save(receiver);
 
@@ -56,27 +71,32 @@ public class FollowService {
             log.info("User " + sender.getUsername() + " unfollowed " + receiver.getUsername());
             action = "unfollowed";
             notificationsService.createNotification(receiverId, "UNFOLLOW", senderId);
-            return new ResponseEntity<>(action, HttpStatus.OK);
+
         } else {
             // Follow the user
-            sender.getFollowing().add(receiver);
-            receiver.getFollowers().add(sender);
+            UserFollowing following = new UserFollowing();
+            following.setUser(sender);
+            following.setFollowing(receiver);
+            userFollowingRepository.save(following);
+
+            UserFollower follower = new UserFollower();
+            follower.setUser(receiver);
+            follower.setFollower(sender);
+            userFollowerRepository.save(follower);
+
             sender.getUserProfile().setFollowingCount(sender.getUserProfile().getFollowingCount() + 1);
             receiver.getUserProfile().setFollowerCount(receiver.getUserProfile().getFollowerCount() + 1);
 
             userRepo.save(sender);
             userRepo.save(receiver);
 
-            // Create and send follow notification
-            notificationsService.createNotification(receiverId, "FOLLOW", senderId);
-
             // Log follow action
             log.info("User " + sender.getUsername() + " followed " + receiver.getUsername());
             action = "followed";
-            return new ResponseEntity<>(action, HttpStatus.OK);
+
+            // Notify the receiver
+            notificationsService.createNotification(receiverId, "FOLLOW", senderId);
         }
-
-
+        return new ResponseEntity<>(action, HttpStatus.OK);
     }
-
 }

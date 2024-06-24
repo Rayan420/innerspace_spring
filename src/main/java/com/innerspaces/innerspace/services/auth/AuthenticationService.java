@@ -32,14 +32,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
+
 import org.thymeleaf.context.Context;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.Key;
-import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,14 +50,11 @@ public class AuthenticationService {
     private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepo;
-    private final UserProfileRepository profileRepo;
     private final EmailServiceImpl emailService;
     private final ForgotPasswordRepository fpRepo;
 
     private final Key secrectKey;
     private final TimeBasedOneTimePasswordGenerator totp;
-
-    private final SecurityContextHolder holder;
 
     private final UserService userService;
 
@@ -81,76 +75,65 @@ public class AuthenticationService {
         this.roleRepo = roleRepo;
         this.passwordEncoder = passwordEncoder;
         this.userRepo = userRepo;
-        this.profileRepo = profileRepo;
         this.emailService = emailService;
         this.fpRepo = fpRepo;
         this.secrectKey = secrectKey;
         this.totp = totp;
-        this.holder = holder;
         this.userService = userService;
         this.notificationsService = notificationsService;
     }
 
 
-    public ApplicationUser registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
-       try
-       {
+    public void registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
 
 
-           System.out.println("Email present " + userService.emailExist(ro.getEmail()) +" " + "usernamme present "+ userService.usernameExist(ro.getUsername()));
-           if(userService.emailExist(ro.getEmail().toLowerCase()))
-           {
-               throw new EmailTaken(ro.getEmail().toLowerCase());
-           }
-           else if(userService.usernameExist(ro.getUsername().toLowerCase()))
-           {
-               logger.warn("username duplicate {}" + ro.getUsername());
-               List<String> names;
-               UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
-               names = recommendation.usernameRecommendation(ro.getUsername());
+        System.out.println("Email present " + userService.emailExist(ro.getEmail()) +" " + "username present "+ userService.usernameExist(ro.getUsername()));
+        if(userService.emailExist(ro.getEmail().toLowerCase()))
+        {
+            throw new EmailTaken(ro.getEmail().toLowerCase());
+        }
+        else if(userService.usernameExist(ro.getUsername().toLowerCase()))
+        {
+            logger.warn("username duplicate {}%s".formatted(ro.getUsername()));
+            List<String> names;
+            UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
+            names = recommendation.usernameRecommendation(ro.getUsername());
 
-               throw new UsernameTaken("username taken try these instead : ", names);
+            throw new UsernameTaken("username taken try these instead : ", names);
 
-           }
-           else
-           {
-               ApplicationUser user = new ApplicationUser();
-               HashSet<Role> roles = new HashSet<>();
+        }
+        else
+        {
+            ApplicationUser user = new ApplicationUser();
+            HashSet<Role> roles = new HashSet<>();
 
-               roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
-               user.setAuthorities(roles);
-               logger.info("Received registration request for user password: {}", ro.getPassword());
+            roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
+            user.setAuthorities(roles);
+            logger.info("Received registration request for user password: {}", ro.getPassword());
 
-               // Set the user for the profile
-               logger.info("Received registration request for user: {}", ro.getUsername() + ro.getEmail());
-               UserProfile profile = new UserProfile();
-               profile.setUser(user);
-               user.setFirstName(ro.getFirstName());
-               user.setLastName(ro.getLastName());
-               user.setEmail(ro.getEmail().toLowerCase());
-               user.setUserProfile(profile);
-
-
-               user.setUsername(ro.getUsername().toLowerCase());
-               String encryptPass = passwordEncoder.encode(ro.getPassword());
-               user.setPassword(encryptPass);
-               logger.info("Received registration request for user encrypted password: {}",encryptPass);
-               userRepo.save(user);
-               EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
-               Context context = new Context();
-               context.setVariable("firstName", ro.getFirstName());
-               context.setVariable("lastName", ro.getLastName());
+            // Set the user for the profile
+            logger.info("Received registration request for user: {}", ro.getUsername() + ro.getEmail());
+            UserProfile profile = new UserProfile();
+            profile.setUser(user);
+            user.setFirstName(ro.getFirstName());
+            user.setLastName(ro.getLastName());
+            user.setEmail(ro.getEmail().toLowerCase());
+            user.setUserProfile(profile);
 
 
-               emailService.sendRegistrationEmail(model, context );
-                return user;
-           }
+            user.setUsername(ro.getUsername().toLowerCase());
+            String encryptPass = passwordEncoder.encode(ro.getPassword());
+            user.setPassword(encryptPass);
+            logger.info("Received registration request for user encrypted password: {}",encryptPass);
+            userRepo.save(user);
+            EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
+            Context context = new Context();
+            context.setVariable("firstName", ro.getFirstName());
+            context.setVariable("lastName", ro.getLastName());
 
-       }
-       catch (UsernameTaken | EmailTaken e)
-       {
-           throw e;
-       }
+
+            emailService.sendRegistrationEmail(model, context );
+        }
 
 
     }
@@ -178,15 +161,14 @@ public class AuthenticationService {
                     user.setLastLogin();
 
                     // Convert following and followers to LightweightUserDTO
-                    Set<LightweightUserDTO> following = user.getFollowing().stream()
-                            .map(this::convertToLightweightUserDTO)
+                    Set<LightweightUserDTO> followingDTOs = user.getFollowing().stream()
+                            .map(follow -> convertToLightweightUserDTO(follow.getFollowing()))
+                            .collect(Collectors.toSet());
+                    Set<LightweightUserDTO> followersDTOs = user.getFollowers().stream()
+                            .map(follower -> convertToLightweightUserDTO(follower.getFollower()))
                             .collect(Collectors.toSet());
 
-                    Set<LightweightUserDTO> followers = user.getFollowers().stream()
-                            .map(this::convertToLightweightUserDTO)
-                            .collect(Collectors.toSet());
-
-                    return new LoginResponseDTO(user, tokens, following, followers);
+                    return new LoginResponseDTO(user, tokens, followingDTOs, followersDTOs);
                 } else {
                     logger.error("User {} not found in the repository", username);
                     return new LoginResponseDTO(null, null, null, null);
@@ -200,6 +182,8 @@ public class AuthenticationService {
             return new LoginResponseDTO(null, null, null, null);
         }
     }
+
+
 
     private LightweightUserDTO convertToLightweightUserDTO(ApplicationUser user) {
         return new LightweightUserDTO(user.getUserId(), user.getUsername(), user.getFirstName(), user.getLastName());

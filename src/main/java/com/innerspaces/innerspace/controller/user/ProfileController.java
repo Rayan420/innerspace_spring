@@ -39,15 +39,6 @@ public UserDto getUserProfile(@RequestParam("user")long userId) {
     }
 
 
-
-
-
-
-
-
-
-
-
     @RequestMapping(value = {"/register/{username}/", "/register/{username}"},
             method = RequestMethod.POST,
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -57,30 +48,22 @@ public UserDto getUserProfile(@RequestParam("user")long userId) {
                                                    @PathVariable String username) throws Exception {
         log.info("Received profile register request for username: {}", username);
 
-        try {
-            ProfileImage image = profileService.saveProfile(username, bio, dob, profile);
-            String downloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/profile/download/") // Add a '/' here
-                    .path(image.getId())
-                    .toUriString();
-            return profileService.setImageUri(downloadUri, image);
-        } catch (Exception e) {
-            throw e;
-        }
+        ProfileImage image = profileService.saveProfile(username, bio, dob, profile);
+        String downloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/profile/download/") // Add a '/' here
+                .path(image.getId())
+                .toUriString();
+        return profileService.setImageUri(downloadUri, image);
     }
 
     @RequestMapping(value = {"/download/{fileId}"},
             method = RequestMethod.GET)
     public ResponseEntity<ByteArrayResource> viewProfileImage(@PathVariable String fileId)
             throws Exception {
-        try {
-            ProfileImage image = profileService.getAttachment(fileId);
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(image.getFileType()))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getFileName() + "\"")
-                    .body(new ByteArrayResource(image.getProfile_image()));
-        } catch (Exception e) {
-            throw e;
-        }
+        ProfileImage image = profileService.getAttachment(fileId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(image.getFileType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getFileName() + "\"")
+                .body(new ByteArrayResource(image.getProfile_image()));
     }
 }

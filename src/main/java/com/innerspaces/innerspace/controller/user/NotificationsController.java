@@ -2,8 +2,9 @@ package com.innerspaces.innerspace.controller.user;
 
 import com.innerspaces.innerspace.services.user.NotificationsService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
 
 @CrossOrigin("*")
 @Slf4j
@@ -18,7 +19,7 @@ public class NotificationsController {
     }
 
     @GetMapping("/subscribe/{userId}")
-    public SseEmitter subscribe(@PathVariable Long userId) {
+    public Flux<ServerSentEvent<?>> subscribe(@PathVariable Long userId) {
         return notificationsService.subscribe(userId);
     }
 }

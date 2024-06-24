@@ -3,16 +3,15 @@ package com.innerspaces.innerspace.services.user;
 import com.innerspaces.innerspace.entities.*;
 import com.innerspaces.innerspace.repositories.user.NotificationRepository;
 import com.innerspaces.innerspace.repositories.user.UserRepository;
-import com.innerspaces.innerspace.utils.SseEmitterUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,7 +22,7 @@ public class NotificationsService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final Map<Long, Sinks.Many<Notifications>> sinks = new ConcurrentHashMap<>();
+    private final Map<Long, Sinks.Many<ServerSentEvent<?>>> notificationEmitters = new ConcurrentHashMap<>();
 
     public NotificationsService(NotificationRepository notificationRepository, UserRepository userRepository) {
         this.notificationRepository = notificationRepository;
@@ -31,32 +30,51 @@ public class NotificationsService {
     }
 
     public boolean isUserSubscribed(Long userId) {
-        return sinks.containsKey(userId);
+        return notificationEmitters.containsKey(userId);
     }
 
-    public SseEmitter subscribe(Long userId) {
-        Sinks.Many<Notifications> sink = Sinks.many().multicast().onBackpressureBuffer();
-        sinks.put(userId, sink);
+    public Flux<ServerSentEvent<?>> subscribe(Long userId) {
+        Sinks.Many<ServerSentEvent<?>> sink = Sinks.many().multicast().onBackpressureBuffer();
+        notificationEmitters.put(userId, sink);
         log.info("User {} subscribed to notifications", userId);
+// Send initial event to confirm the connection
+        sink.tryEmitNext(ServerSentEvent.builder()
+                .comment("Connection established")
+                .build()).orThrow();
 
-        Flux<Notifications> notificationFlux = sink.asFlux()
-                .doOnSubscribe(subscription -> sendInitEvent(sink, userId));
+        // Send initial notifications if available
+        getNotifications(userId)
+                .collectList()
+                .flatMapMany(notifications -> {
+                    if (notifications.isEmpty()) {
+                        return Flux.just(ServerSentEvent.builder()
+                                .event("initialData")
+                                .data(Collections.emptyList())
+                                .build());
+                    } else {
+                        return Flux.just(ServerSentEvent.builder()
+                                .event("initialData")
+                                .data(notifications)
+                                .build());
+                    }
+                })
+                .subscribe(sink::tryEmitNext);
 
-        return SseEmitterUtils.fromFlux(notificationFlux, -1L);
+
+        return sink.asFlux().doOnTerminate(() -> unsubscribe(userId));
+
     }
 
     public void unsubscribe(Long userId) {
-        sinks.remove(userId);
+        notificationEmitters.remove(userId);
         log.info("User {} unsubscribed from notifications", userId);
     }
 
-    private void sendInitEvent(Sinks.Many<Notifications> sink, Long userId) {
-        try {
-            List<Notifications> recentNotifications = notificationRepository.findTop10ByOwnerIdOrderByCreatedAtDesc(userId);
-            recentNotifications.forEach(sink::tryEmitNext);
-        } catch (Exception e) {
-            log.error("Error sending init event", e);
-        }
+    Flux<Notifications> getNotifications(Long userId) {
+        return Flux.defer(() -> {
+            List<Notifications> notifications = notificationRepository.findTop10ByOwnerIdOrderByCreatedAtDesc(userId);
+            return Flux.fromIterable(notifications);
+        });
     }
 
     @Async
@@ -107,9 +125,13 @@ public class NotificationsService {
 
     @Async
     public void sendNotification(Notifications notification, Long userId) {
-        Sinks.Many<Notifications> sink = sinks.get(userId);
+        Sinks.Many<ServerSentEvent<?>> sink = notificationEmitters.get(userId);
         if (sink != null) {
-            sink.tryEmitNext(notification);
+            sink.tryEmitNext(ServerSentEvent.builder()
+                    .event("newPost")
+                    .data(notification)
+                    .build()).orThrow();
         }
     }
+
 }
