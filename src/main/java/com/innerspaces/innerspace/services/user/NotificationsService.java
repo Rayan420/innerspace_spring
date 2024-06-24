@@ -128,7 +128,7 @@ public class NotificationsService {
         Sinks.Many<ServerSentEvent<?>> sink = notificationEmitters.get(userId);
         if (sink != null) {
             sink.tryEmitNext(ServerSentEvent.builder()
-                    .event("newPost")
+                    .event("newNotification")
                     .data(notification)
                     .build()).orThrow();
         }

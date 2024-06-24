@@ -34,8 +34,8 @@ public class TimelineController {
         this.postService = postService;
     }
 
-    @GetMapping(value={"/subscribe"}, produces = "text/event-stream")
-    public Flux<ServerSentEvent<?>> subscribe(@RequestParam Long userId) {
+    @GetMapping(value={"/subscribe/{userId}"}, produces = "text/event-stream")
+    public Flux<ServerSentEvent<?>> subscribe(@PathVariable Long userId) {
         return timelineService.subscribe(userId);
     }
 

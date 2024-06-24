@@ -18,7 +18,7 @@ public class NotificationsController {
         this.notificationsService = notificationsService;
     }
 
-    @GetMapping("/subscribe/{userId}")
+    @GetMapping(value={"/subscribe/{userId}"}, produces = "text/event-stream")
     public Flux<ServerSentEvent<?>> subscribe(@PathVariable Long userId) {
         return notificationsService.subscribe(userId);
     }
