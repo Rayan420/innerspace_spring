@@ -56,16 +56,18 @@ public class PostService {
         });
     }
 
-    public Post createPost(Long userId, MultipartFile file) throws IOException {
+    public Post createPost(Long userId, MultipartFile file, int duration) throws IOException {
         ApplicationUser user = userService.getUserById(userId);
-
+        System.out.println("file name: " + file.getOriginalFilename() + " file type: " + file.getContentType() + " file size: " + file.getSize()
+                +  " file resource: " + file.getResource() + " file url: " + file.getOriginalFilename()
+        );
         PostAudioFile audioFile = new PostAudioFile();
         audioFile.setData(file.getBytes());
         audioFile.setFilename(file.getOriginalFilename());
         audioFile.setContentType(file.getContentType());
         PostAudioFile savedAudioFile = postAudioFileRepository.save(audioFile);
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/timeline/")
+                .path("/listen/")
                 .path(savedAudioFile.getId())
                 .path("/")
                 .path(audioFile.getFilename())
@@ -73,13 +75,18 @@ public class PostService {
                 .path(audioFile.getContentType())
                 .path("/stream")
                 .toUriString();
-
+        System.out.println("URL: " + url);
+        // check if the url contains 10.0.2.2 if so replace with localhost
+        if (url.contains("10.0.2.2")) {
+            url = url.replace("10.0.2.2", "localhost");
+        }
         Post post = new Post();
         post.setUser(user);
         post.setAudioFile(savedAudioFile);
         post.setProfileImageUrl(user.getUserProfile().getProfileImageUrl());
         post.setTimestamp(LocalDateTime.now());
         post.setUrl(url);
+        post.setDuration(duration);
 
         postRepository.save(post);
         return post;

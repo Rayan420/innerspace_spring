@@ -103,9 +103,9 @@ public class TimelineService {
         }
     }
 
-    public void createPost(Long userId, MultipartFile file) {
+    public void createPost(Long userId, MultipartFile file, int duration) {
         try {
-            Post post = postService.createPost(userId, file);
+            Post post = postService.createPost(userId, file, duration);
             notifyFollowers(post);
         } catch (Exception e) {
             log.error("Error creating post", e);

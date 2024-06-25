@@ -86,7 +86,7 @@ public class SecurityConfiguration   {
         {
             auth.requestMatchers("/auth/**", "/auth/refresh/**","/profile/download/**",
                     "/v2/api-docs", "/v3/api-docs", "/v3/api-docs/**",
-                    "/swagger-ui.html", "/swagger-ui/**").permitAll();
+                    "/swagger-ui.html", "/swagger-ui/**", "/listen/**").permitAll();
             auth.requestMatchers("/auth/logout/**").authenticated();
             auth.anyRequest().authenticated();
 

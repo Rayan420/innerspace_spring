@@ -25,7 +25,7 @@ public class Post {
     private PostAudioFile audioFile; // Changed to reference PostAudioFile
 
 
-    private double duration;
+    private int duration;
     // This field can be generated or set to provide the URL for streaming
     private String url;
 

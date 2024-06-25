@@ -41,29 +41,12 @@ public class TimelineController {
 
     @PostMapping("/post")
     public ResponseEntity<String> createPost(@RequestParam("userId") Long userId,
-                                             @RequestParam("file") MultipartFile file) {
-        timelineService.createPost(userId, file);
+                                             @RequestParam("file") MultipartFile file,
+                                             @RequestParam("duration") int duration
+                                             ) {
+        timelineService.createPost(userId, file, duration);
         return new ResponseEntity<>("Post created successfully", HttpStatus.CREATED);
     }
 
-    @GetMapping("/{uniqueId}/{fileName}/audio/{fileType}/stream")
-    public ResponseEntity<Resource> streamAudioFile(
-            @PathVariable String uniqueId,
-            @PathVariable String fileName,
-            @PathVariable String fileType,
-            @RequestHeader HttpHeaders headers) {
-        try {
-            PostAudioFile audioFile = postService.getAudioFileByUniqueId(uniqueId);
-            Resource audioResource = new ByteArrayResource(audioFile.getData());
 
-            HttpHeaders responseHeaders = new HttpHeaders();
-            responseHeaders.setContentType(MediaType.parseMediaType("audio/" + fileType));
-            responseHeaders.setContentLength(audioResource.contentLength());
-
-            return new ResponseEntity<>(audioResource, responseHeaders, HttpStatus.OK);
-        } catch (IOException e) {
-            log.error("Error fetching audio file", e);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
 }
