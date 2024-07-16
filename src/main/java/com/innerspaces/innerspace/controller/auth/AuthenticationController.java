@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 
 
@@ -75,6 +76,8 @@ public class AuthenticationController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         } catch (UsernameTaken e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

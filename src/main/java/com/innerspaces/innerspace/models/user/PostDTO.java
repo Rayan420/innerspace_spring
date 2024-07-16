@@ -17,6 +17,7 @@ public class PostDTO {
     private String profileImageUrl;
     private String timestamp;
     private String coverImageUrl;
+    private int likeCount = 0;
 
     public PostDTO(Long id, String userName, String name, String audioUrl, String profileImageUrl, String timestamp, String coverImageUrl) {
         this.id = id;

@@ -13,6 +13,8 @@ public class LikeNotification extends Notifications {
 
   // add post data later
     private String notificationType;
+    private int voteCount;
+
     public LikeNotification() {
         super();
     }

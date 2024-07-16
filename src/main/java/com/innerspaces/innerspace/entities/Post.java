@@ -35,13 +35,10 @@ public class Post {
     private String coverImageUrl;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
-    private List<PostListen> listens;
+    private List<PostLike> votes;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
-    private List<PostLike> likes;
+    private int voteCount;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
-    private List<PostReply> replies;
 
    
 }

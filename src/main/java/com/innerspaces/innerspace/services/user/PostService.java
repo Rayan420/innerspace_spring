@@ -25,17 +25,24 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserService userService;
     private final UserFollowingRepository userFollowingRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final  NotificationsService notificationsService;
 
     @Autowired
-    public PostService(PostAudioFileRepository postAudioFileRepository, PostRepository postRepository, UserService userService, UserFollowingRepository userFollowingRepository) {
+    public PostService(PostAudioFileRepository postAudioFileRepository, PostRepository postRepository, UserService userService, UserFollowingRepository userFollowingRepository, PostLikeRepository postLikeRepository, NotificationsService notificationsService) {
         this.postAudioFileRepository = postAudioFileRepository;
         this.postRepository = postRepository;
         this.userService = userService;
         this.userFollowingRepository = userFollowingRepository;
+        this.postLikeRepository = postLikeRepository;
+        this.notificationsService = notificationsService;
     }
 
-    public List<Post> getPosts(Long userId) {
-        return postRepository.findByUserInOrderByTimestampDesc(userId);
+    public List<PostDTO> getPosts(Long userId) {
+        return postRepository.findByUserInOrderByTimestampDesc(userId)
+                .stream()
+                .map(PostDTO::fromPost)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -110,5 +117,24 @@ public class PostService {
 
     private double calculateDuration(MultipartFile audioData) {
         return 0;
+    }
+
+    public void likePost(Long postId, Long senderId, String vote) {
+        PostLike like = new PostLike();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid post ID"));
+        ApplicationUser user = userService.getUserById(senderId);
+        like.setPost(post);
+        like.setUser(user);
+        postLikeRepository.save(like);
+        post.getVotes().add(like);
+        if (vote.equals("UPVOTE")) {
+            post.setVoteCount(post.getVoteCount() + 1);
+        } else {
+            post.setVoteCount(post.getVoteCount() - 1);
+        }
+        postRepository.save(post);
+
+        notificationsService.createVoteNotification(post.getUser().getUserId(), vote, senderId,  post.getVotes().size());
     }
 }

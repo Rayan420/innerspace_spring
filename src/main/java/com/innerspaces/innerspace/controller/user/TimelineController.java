@@ -48,5 +48,17 @@ public class TimelineController {
         return new ResponseEntity<>("Post created successfully", HttpStatus.CREATED);
     }
 
+    @PutMapping("/{vote}/{postId}/{senderId}")
+    public ResponseEntity<String> likePost(@PathVariable String vote, @PathVariable Long postId, @PathVariable Long senderId) {
+        timelineService.likePost(postId, senderId, vote);
+        return new ResponseEntity<>("Post liked successfully", HttpStatus.OK);
+    }
+
+
+    // get user's own posts
+    @GetMapping(value = {"/{userId}"})
+    public ResponseEntity<?> getPosts(@PathVariable Long userId) {
+        return new ResponseEntity<>(postService.getPosts(userId), HttpStatus.OK);
+    }
 
 }

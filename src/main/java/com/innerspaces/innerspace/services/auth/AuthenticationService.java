@@ -9,11 +9,9 @@ import com.innerspaces.innerspace.exceptions.RoleDoesNotExistException;
 import com.innerspaces.innerspace.exceptions.EmailTaken;
 import com.innerspaces.innerspace.models.auth.*;
 import com.innerspaces.innerspace.repositories.auth.ForgotPasswordRepository;
-import com.innerspaces.innerspace.repositories.user.ProfileImageRepository;
-import com.innerspaces.innerspace.repositories.user.RoleRepository;
-import com.innerspaces.innerspace.repositories.user.UserProfileRepository;
-import com.innerspaces.innerspace.repositories.user.UserRepository;
+import com.innerspaces.innerspace.repositories.user.*;
 import com.innerspaces.innerspace.services.EmailServiceImpl;
+import com.innerspaces.innerspace.services.ImageService;
 import com.innerspaces.innerspace.services.user.NotificationsService;
 import com.innerspaces.innerspace.services.user.UserService;
 import com.innerspaces.innerspace.utils.UsernameRecomAlgo;
@@ -22,6 +20,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,8 +33,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.thymeleaf.context.Context;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.time.Instant;
@@ -52,7 +58,7 @@ public class AuthenticationService {
     private final UserRepository userRepo;
     private final EmailServiceImpl emailService;
     private final ForgotPasswordRepository fpRepo;
-
+    private final CoverImageRepository coverImageRepository;
     private final Key secrectKey;
     private final TimeBasedOneTimePasswordGenerator totp;
 
@@ -62,13 +68,18 @@ public class AuthenticationService {
 
     private final NotificationsService notificationsService;
 
+
+    @Value("${images.directory.path}")
+    private String imagesDirectoryPath; // Injected from application.properties or application.yml
+
     @Autowired
     public AuthenticationService(AuthenticationManager authenticationManager, TokenService tokenService,
                                  RoleRepository roleRepo, PasswordEncoder passwordEncoder,
                                  UserRepository userRepo, UserProfileRepository profileRepo,
                                  EmailServiceImpl emailService, ForgotPasswordRepository fpRepo,
                                  Key secrectKey, TimeBasedOneTimePasswordGenerator totp,
-                                 SecurityContextHolder holder, UserService userService, NotificationsService notificationsService)
+                                 SecurityContextHolder holder,  CoverImageRepository coverImageRepository,
+                                 UserService userService, NotificationsService notificationsService, ProfileImageRepository imageRepo)
     {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
@@ -79,36 +90,32 @@ public class AuthenticationService {
         this.fpRepo = fpRepo;
         this.secrectKey = secrectKey;
         this.totp = totp;
+        this.coverImageRepository = coverImageRepository;
         this.userService = userService;
         this.notificationsService = notificationsService;
+        this.imageRepo = imageRepo;
     }
 
 
-    public void registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken{
-
-
-        System.out.println("Email present " + userService.emailExist(ro.getEmail()) +" " + "username present "+ userService.usernameExist(ro.getUsername()));
-        if(userService.emailExist(ro.getEmail().toLowerCase()))
-        {
+    @Transactional(rollbackFor = {UsernameTaken.class, EmailTaken.class, IOException.class})
+    public void registerUser(RegistrationObject ro) throws UsernameTaken, EmailTaken, IOException {
+        if (userService.emailExist(ro.getEmail().toLowerCase())) {
             throw new EmailTaken(ro.getEmail().toLowerCase());
-        }
-        else if(userService.usernameExist(ro.getUsername().toLowerCase()))
-        {
-            logger.warn("username duplicate {}%s".formatted(ro.getUsername()));
+        } else if (userService.usernameExist(ro.getUsername().toLowerCase())) {
+            logger.warn("username duplicate {}%s", ro.getUsername());
             List<String> names;
             UsernameRecomAlgo recommendation = new UsernameRecomAlgo(userRepo);
             names = recommendation.usernameRecommendation(ro.getUsername());
 
             throw new UsernameTaken("username taken try these instead : ", names);
 
-        }
-        else
-        {
+        } else {
             ApplicationUser user = new ApplicationUser();
             HashSet<Role> roles = new HashSet<>();
 
             roles.add(roleRepo.findByAuthority("USER").orElseThrow(RoleDoesNotExistException::new));
             user.setAuthorities(roles);
+
             logger.info("Received registration request for user password: {}", ro.getPassword());
 
             // Set the user for the profile
@@ -120,23 +127,66 @@ public class AuthenticationService {
             user.setEmail(ro.getEmail().toLowerCase());
             user.setUserProfile(profile);
 
+            // Set default profile image
+            ProfileImage profileImage = new ProfileImage();
+            byte[] defaultProfileImageBytes = getImageBytes("profile1.png");
+            profileImage.setProfile_image(defaultProfileImageBytes);
+            profileImage.setFileType("image/png");
+            profileImage.setFileName(ro.getUsername() + "_profile.png");
+            profileImage.setProfile(profile);
+// Save profile images
+            imageRepo.save(profileImage);
+            // Generate profile image URL
+            String profileUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/profile/download/")
+                    .path(String.valueOf(profileImage.getId()))
+                    .toUriString();
+            profile.setProfileImageUrl(profileUri);
+            profile.setProfileImage(profileImage);
+
+            // Set default cover image
+            CoverImage coverImage = new CoverImage();
+            byte[] defaultCoverImageBytes = getImageBytes("cover.png");
+            coverImage.setCover_image(defaultCoverImageBytes);
+            coverImage.setFileType("image/png");
+            coverImage.setFileName(ro.getUsername() + "_cover.png");
+            coverImage.setProfile(profile);
+            coverImageRepository.save(coverImage);
+
+            // Generate cover image URL
+            String coverUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/profile/cover/download/")
+                    .path(String.valueOf(coverImage.getId()))
+                    .toUriString();
+            profile.setCoverImageUrl(coverUri);
+            profile.setCoverImage(coverImage);
+
+
 
             user.setUsername(ro.getUsername().toLowerCase());
             String encryptPass = passwordEncoder.encode(ro.getPassword());
             user.setPassword(encryptPass);
-            logger.info("Received registration request for user encrypted password: {}",encryptPass);
+            logger.info("Received registration request for user encrypted password: {}", encryptPass);
             userRepo.save(user);
+
             EmailModel model = new EmailModel(user.getEmail(), "Welcome to Innerspace", "welcome_email", user.getFirstName(), user.getLastName());
             Context context = new Context();
             context.setVariable("firstName", ro.getFirstName());
             context.setVariable("lastName", ro.getLastName());
 
-
-            emailService.sendRegistrationEmail(model, context );
+            emailService.sendRegistrationEmail(model, context);
         }
-
-
     }
+
+    private byte[] getImageBytes(String imageName) throws IOException {
+        ClassLoader classLoader = getClass().getClassLoader();
+        InputStream inputStream = classLoader.getResourceAsStream("static/" + imageName);
+        if (inputStream == null) {
+            throw new FileNotFoundException("File not found: " + imageName);
+        }
+        return inputStream.readAllBytes();
+    }
+
 
 
     public LoginResponseDTO loginUser(String username, String password) {

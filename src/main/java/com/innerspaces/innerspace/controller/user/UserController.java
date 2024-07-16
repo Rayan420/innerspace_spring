@@ -1,15 +1,21 @@
 package com.innerspaces.innerspace.controller.user;
 
 import com.innerspaces.innerspace.entities.ApplicationUser;
+import com.innerspaces.innerspace.entities.CoverImage;
+import com.innerspaces.innerspace.entities.ProfileImage;
 import com.innerspaces.innerspace.models.auth.LoginResponseDTO;
+import com.innerspaces.innerspace.models.user.UpdateDTO;
 import com.innerspaces.innerspace.services.user.FollowService;
 import com.innerspaces.innerspace.services.user.ProfileService;
 import com.innerspaces.innerspace.services.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 
@@ -58,6 +64,9 @@ public class UserController {
     public ResponseEntity<?> followUser(@PathVariable Long senderId, @PathVariable Long receiverId) {
         return followService.followOrUnfollowUser(senderId, receiverId);
     }
+
+
+
 
 
 }

@@ -97,6 +97,56 @@ public class NotificationsService {
         }
     }
 
+    @Async
+    public void createVoteNotification(Long userId, String type, Long senderId, int count) {
+        try {
+            // Fetch sender and receiver information
+            ApplicationUser sender = userRepository.findById(senderId)
+                    .orElseThrow(() -> new UsernameNotFoundException("Sender not found"));
+            ApplicationUser receiver = userRepository.findById(userId)
+                    .orElseThrow(() -> new UsernameNotFoundException("Receiver not found"));
+
+            // Ensure sender and receiver are different before sending notification
+            if (!userId.equals(senderId)) {
+                Notifications notification = buildVoteNotification(type, sender, receiver, count);
+
+                notification.setOwnerId(userId);
+                notification.setSenderName(sender.getFirstName() + " " + sender.getLastName());
+                notification.setSenderId(senderId);
+                notification.setSenderImage(sender.getUserProfile().getProfileImageUrl());
+                notification.setSenderUsername(sender.getUsername());
+
+                Notifications savedNotification = notificationRepository.save(notification);
+                sendNotification(savedNotification, userId);
+            }
+
+            log.info("Notification created successfully");
+        } catch (Exception e) {
+            log.error("Error creating notification", e);
+        }
+    }
+
+
+    private Notifications buildVoteNotification(String type, ApplicationUser sender, ApplicationUser receiver, int count) {
+        switch (type) {
+
+            case "UPVOTE":
+                LikeNotification upvoteNotification = new LikeNotification();
+                upvoteNotification.setMessage(sender.getUsername() + " UPVOTED your post");
+                upvoteNotification.setNotificationType(type);
+                upvoteNotification.setVoteCount(count);
+                return upvoteNotification;
+            case "DOWNVOTE":
+                LikeNotification downvoteNotification = new LikeNotification();
+                downvoteNotification.setMessage(sender.getUsername() + " DOWNVOTED your post");
+                downvoteNotification.setNotificationType(type);
+                downvoteNotification.setVoteCount(count);
+                return downvoteNotification;
+            default:
+                throw new IllegalArgumentException("Invalid notification type");
+        }
+    }
+
     private Notifications buildNotification(String type, ApplicationUser sender, ApplicationUser receiver) {
         switch (type) {
             case "FOLLOW":
@@ -113,11 +163,7 @@ public class NotificationsService {
                 unfollowNotification.setFollowerCount(receiver.getUserProfile().getFollowerCount());
                 unfollowNotification.setNotificationType("UNFOLLOW");
                 return unfollowNotification;
-            case "LIKE":
-                LikeNotification likeNotification = new LikeNotification();
-                likeNotification.setMessage(sender.getUsername() + " liked your post");
-                likeNotification.setNotificationType("LIKE");
-                return likeNotification;
+
             default:
                 throw new IllegalArgumentException("Invalid notification type");
         }

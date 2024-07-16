@@ -1,5 +1,6 @@
 package com.innerspaces.innerspace.services.user;
 
+import com.innerspaces.innerspace.entities.Notifications;
 import com.innerspaces.innerspace.entities.Post;
 import com.innerspaces.innerspace.entities.ApplicationUser;
 import com.innerspaces.innerspace.entities.UserFollower;
@@ -102,13 +103,25 @@ public class TimelineService {
             }
         }
     }
-
+// load user posts
+    public List<PostDTO> getPosts(Long userId) {
+        return postService.getPosts(userId);
+    }
     public void createPost(Long userId, MultipartFile file, int duration) {
         try {
             Post post = postService.createPost(userId, file, duration);
             notifyFollowers(post);
         } catch (Exception e) {
             log.error("Error creating post", e);
+        }
+    }
+
+    public void likePost(Long postId, Long senderId, String vote) {
+
+        try {
+            postService.likePost(postId, senderId, vote);
+        } catch (Exception e) {
+            log.error("Error liking post", e);
         }
     }
 }

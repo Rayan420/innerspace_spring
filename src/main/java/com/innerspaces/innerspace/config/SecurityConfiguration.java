@@ -31,6 +31,8 @@ import javax.crypto.KeyGenerator;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 
+import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toStaticResources;
+
 
 @Configuration
 @EnableWebSecurity
@@ -77,6 +79,7 @@ public class SecurityConfiguration   {
         return new SecurityContextHolder();
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http)
             throws Exception{
@@ -84,9 +87,12 @@ public class SecurityConfiguration   {
         http.cors(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(auth ->
         {
-            auth.requestMatchers("/auth/**", "/auth/refresh/**","/profile/download/**",
+            auth.requestMatchers("/auth/**", "/auth/refresh/**","/profile/download/**","/profile/cover/download/**",
                     "/v2/api-docs", "/v3/api-docs", "/v3/api-docs/**",
                     "/swagger-ui.html", "/swagger-ui/**", "/listen/**").permitAll();
+            auth.requestMatchers(
+                toStaticResources().atCommonLocations() // !
+        ).permitAll();
             auth.requestMatchers("/auth/logout/**").authenticated();
             auth.anyRequest().authenticated();
 
